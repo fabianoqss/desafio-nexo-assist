@@ -12,15 +12,15 @@
 
 ## Roadmap (one plan per milestone, each written when the previous one is done)
 
-| Plan | Delivers |
-|---|---|
-| **1 (this)** | Monorepo, CI, `packages/domain` |
-| 2 | `packages/contracts`, `apps/ticket-service` (DB, seed, HTTP API, failure injection), Docker Compose |
-| 3 | `apps/api`: auth, sessions, RBAC, conversations, drafts, console endpoints, ticket client with retry and circuit breaker |
-| 4 | Mastra agent: tools, decision record, confidence, handoff, IT-only scope redirect (intent classification), SSE streaming |
-| 5 | `apps/web`: login, chat, console, profile |
-| 6 | Observability: logs, OpenTelemetry, Prometheus metrics, Grafana, health checks |
-| 7 | Agent evals across 3 providers, Playwright E2E, README, deploy |
+| Plan         | Delivers                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| **1 (this)** | Monorepo, CI, `packages/domain`                                                                                          |
+| 2            | `packages/contracts`, `apps/ticket-service` (DB, seed, HTTP API, failure injection), Docker Compose                      |
+| 3            | `apps/api`: auth, sessions, RBAC, conversations, drafts, console endpoints, ticket client with retry and circuit breaker |
+| 4            | Mastra agent: tools, decision record, confidence, handoff, IT-only scope redirect (intent classification), SSE streaming |
+| 5            | `apps/web`: login, chat, console, profile                                                                                |
+| 6            | Observability: logs, OpenTelemetry, Prometheus metrics, Grafana, health checks                                           |
+| 7            | Agent evals across 3 providers, Playwright E2E, README, deploy                                                           |
 
 ## Ownership and git flow
 
@@ -54,11 +54,13 @@
 ### Task 1: Monorepo setup (Claude, with explanations)
 
 **Files:**
+
 - Create: `package.json`, `pnpm-workspace.yaml`, `.npmrc`, `.nvmrc`, `.editorconfig`, `.prettierrc.json`, `.prettierignore`, `eslint.config.js`, `tsconfig.base.json`, `vitest.config.ts`, `.github/workflows/ci.yml`
 - Create: `packages/domain/package.json`, `packages/domain/tsconfig.json`, `packages/domain/vitest.config.ts`, `packages/domain/src/index.ts`
 - Test: `packages/domain/test/smoke.test.ts`
 
 **Interfaces:**
+
 - Produces: root scripts `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format`; workspace package `@nexo/domain` exporting from `src/index.ts`.
 
 - [ ] **Step 1:** Root `package.json`: `"private": true`, `"type": "module"`, `"packageManager": "pnpm@12.21.0"`, `"engines": { "node": ">=26" }`, scripts `lint`, `typecheck` (`pnpm -r typecheck`), `test` (`vitest run`), `format`. `pnpm-workspace.yaml` lists `apps/*` and `packages/*`. `.nvmrc` = `26`. `packages/domain/package.json`: name `@nexo/domain`, `"type": "module"`, `"exports": { ".": "./src/index.ts" }` (internal package consumed as TypeScript source, no build step).
@@ -73,12 +75,14 @@
 ### Task 2: Enums and entities (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/enums/{ticket-type,category,impact,urgency,priority,ticket-status}.ts`
 - Create: `packages/domain/src/entities/{ticket,ticket-draft}.ts`
 - Modify: `packages/domain/src/index.ts`
 - Test: `packages/domain/test/enums/enums.test.ts`
 
 **Interfaces:**
+
 - Produces, each as `export const X = {...} as const; export type X = (typeof X)[keyof typeof X];`:
   - `TicketType`: `INC`, `REQ`
   - `Category`: `ACCESS`, `NETWORK_VPN`, `HARDWARE`, `SOFTWARE`, `EMAIL`, `OTHER`
@@ -87,16 +91,32 @@
   - `Priority`: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`
   - `TicketStatus`: `OPEN`, `IN_PROGRESS`, `WAITING_ANALYST`, `APPROVED`, `RESOLVED`
 - Produces:
+
   ```ts
   interface Ticket {
-    id: string; type: TicketType; title: string; description: string;
-    category: Category; item?: string; impact: Impact; urgency: Urgency;
-    priority: Priority; status: TicketStatus; requesterId: string;
-    createdAt: Date; lastUpdateAt: Date; resolvedAt?: Date;
+    id: string;
+    type: TicketType;
+    title: string;
+    description: string;
+    category: Category;
+    item?: string;
+    impact: Impact;
+    urgency: Urgency;
+    priority: Priority;
+    status: TicketStatus;
+    requesterId: string;
+    createdAt: Date;
+    lastUpdateAt: Date;
+    resolvedAt?: Date;
   }
   interface TicketDraft {
-    type: TicketType; title: string; description: string; category: Category;
-    item?: string; impact: Impact; urgency: Urgency;
+    type: TicketType;
+    title: string;
+    description: string;
+    category: Category;
+    item?: string;
+    impact: Impact;
+    urgency: Urgency;
   }
   ```
 
@@ -109,10 +129,12 @@
 ### Task 3: Priority matrix and handoff priority (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/rules/priority.ts`
 - Test: `packages/domain/test/rules/priority.test.ts`
 
 **Interfaces:**
+
 - Produces: `computePriority(impact: Impact, urgency: Urgency): Priority`
 - Produces: `resolveHandoffPriority(input: { ticketPriority?: Priority; impact?: Impact; urgency?: Urgency }): Priority`
 
@@ -120,13 +142,14 @@ Rule (Annex A): `BLOCKED` with impact `TEAM` or `COMPANY` → `CRITICAL`; otherw
 
 - [ ] **Step 1: Write the failing tests** with `it.each` over all 12 combinations:
 
-  | impact \ urgency | BLOCKED | SAME_DAY_COMMITMENT | HAS_WORKAROUND | NO_URGENCY |
-  |---|---|---|---|---|
-  | SELF | HIGH | HIGH | MEDIUM | LOW |
-  | TEAM | CRITICAL | HIGH | MEDIUM | LOW |
-  | COMPANY | CRITICAL | HIGH | MEDIUM | LOW |
+  | impact \ urgency | BLOCKED  | SAME_DAY_COMMITMENT | HAS_WORKAROUND | NO_URGENCY |
+  | ---------------- | -------- | ------------------- | -------------- | ---------- |
+  | SELF             | HIGH     | HIGH                | MEDIUM         | LOW        |
+  | TEAM             | CRITICAL | HIGH                | MEDIUM         | LOW        |
+  | COMPANY          | CRITICAL | HIGH                | MEDIUM         | LOW        |
 
   Handoff priority: `{ ticketPriority: 'LOW', impact: 'COMPANY', urgency: 'BLOCKED' }` → `LOW` (the ticket wins); `{ impact: 'SELF', urgency: 'BLOCKED' }` → `HIGH`; `{ impact: 'SELF' }` → `MEDIUM`; `{}` → `MEDIUM`.
+
 - [ ] **Step 2: Run** `pnpm test priority`. Expected: FAIL.
 - [ ] **Step 3: Implement** both functions in `src/rules/priority.ts`; export them.
 - [ ] **Step 4: Run** `pnpm test priority`. Expected: PASS.
@@ -135,10 +158,12 @@ Rule (Annex A): `BLOCKED` with impact `TEAM` or `COMPANY` → `CRITICAL`; otherw
 ### Task 4: Business calendar and deadlines (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/calendar/business-hours.ts`, `packages/domain/src/rules/deadline.ts`
 - Test: `packages/domain/test/calendar/business-hours.test.ts`, `packages/domain/test/rules/deadline.test.ts`
 
 **Interfaces:**
+
 - Produces: `addBusinessHours(from: Date, hours: number): Date` (Monday–Friday 08:00–18:00, `America/Sao_Paulo`)
 - Produces: `computeDueAt(priority: Priority, from: Date): Date`
 - Produces: `DEADLINES: Record<Priority, { kind: 'wall-clock-hours' | 'business-hours'; amount: number }>` = CRITICAL `{wall-clock-hours, 1}`, HIGH `{business-hours, 4}`, MEDIUM `{business-hours, 30}`, LOW `{business-hours, 50}`
@@ -147,18 +172,18 @@ Approach: use `TZDate` from `@date-fns/tz` to work in São Paulo local time. A s
 
 - [ ] **Step 1: Write the failing tests** (all inputs and outputs as UTC ISO strings; São Paulo is UTC−3):
 
-  | Case | Priority | From | Expected due |
-  |---|---|---|---|
-  | same day | HIGH | `2026-12-09T12:43:00Z` (Wed 09:43) | `2026-12-09T16:43:00Z` (13:43) |
-  | ends at 18:00 exactly | HIGH | `2026-12-09T17:00:00Z` (Wed 14:00) | `2026-12-09T21:00:00Z` (18:00) |
-  | crosses the night | HIGH | `2026-12-09T19:00:00Z` (Wed 16:00) | `2026-12-10T13:00:00Z` (Thu 10:00) |
-  | starts at 18:00 exactly | HIGH | `2026-12-09T21:00:00Z` (Wed 18:00) | `2026-12-10T15:00:00Z` (Thu 12:00) |
-  | before opening | HIGH | `2026-12-09T10:00:00Z` (Wed 07:00) | `2026-12-09T15:00:00Z` (12:00) |
-  | crosses the weekend | HIGH | `2026-12-11T20:00:00Z` (Fri 17:00) | `2026-12-14T14:00:00Z` (Mon 11:00) |
-  | starts on Saturday | HIGH | `2026-12-12T13:00:00Z` (Sat 10:00) | `2026-12-14T15:00:00Z` (Mon 12:00) |
-  | critical, 24/7 | CRITICAL | `2026-12-12T06:00:00Z` (Sat 03:00) | `2026-12-12T07:00:00Z` (Sat 04:00) |
-  | 3 business days | MEDIUM | `2026-12-09T17:20:00Z` (Wed 14:20) | `2026-12-14T17:20:00Z` (Mon 14:20) |
-  | 5 business days | LOW | `2026-12-09T17:20:00Z` (Wed 14:20) | `2026-12-16T17:20:00Z` (Wed 14:20) |
+  | Case                    | Priority | From                               | Expected due                       |
+  | ----------------------- | -------- | ---------------------------------- | ---------------------------------- |
+  | same day                | HIGH     | `2026-12-09T12:43:00Z` (Wed 09:43) | `2026-12-09T16:43:00Z` (13:43)     |
+  | ends at 18:00 exactly   | HIGH     | `2026-12-09T17:00:00Z` (Wed 14:00) | `2026-12-09T21:00:00Z` (18:00)     |
+  | crosses the night       | HIGH     | `2026-12-09T19:00:00Z` (Wed 16:00) | `2026-12-10T13:00:00Z` (Thu 10:00) |
+  | starts at 18:00 exactly | HIGH     | `2026-12-09T21:00:00Z` (Wed 18:00) | `2026-12-10T15:00:00Z` (Thu 12:00) |
+  | before opening          | HIGH     | `2026-12-09T10:00:00Z` (Wed 07:00) | `2026-12-09T15:00:00Z` (12:00)     |
+  | crosses the weekend     | HIGH     | `2026-12-11T20:00:00Z` (Fri 17:00) | `2026-12-14T14:00:00Z` (Mon 11:00) |
+  | starts on Saturday      | HIGH     | `2026-12-12T13:00:00Z` (Sat 10:00) | `2026-12-14T15:00:00Z` (Mon 12:00) |
+  | critical, 24/7          | CRITICAL | `2026-12-12T06:00:00Z` (Sat 03:00) | `2026-12-12T07:00:00Z` (Sat 04:00) |
+  | 3 business days         | MEDIUM   | `2026-12-09T17:20:00Z` (Wed 14:20) | `2026-12-14T17:20:00Z` (Mon 14:20) |
+  | 5 business days         | LOW      | `2026-12-09T17:20:00Z` (Wed 14:20) | `2026-12-16T17:20:00Z` (Wed 14:20) |
 
 - [ ] **Step 2: Run** `pnpm test deadline business-hours`. Expected: FAIL.
 - [ ] **Step 3: Implement** `addBusinessHours`, `DEADLINES` and `computeDueAt`; export them.
@@ -168,10 +193,12 @@ Approach: use `TZDate` from `@date-fns/tz` to work in São Paulo local time. A s
 ### Task 5: Overdue (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/rules/overdue.ts`
 - Test: `packages/domain/test/rules/overdue.test.ts`
 
 **Interfaces:**
+
 - Consumes: `computeDueAt` (Task 4)
 - Produces: `isOverdue(ticket: Pick<Ticket, 'priority' | 'status' | 'lastUpdateAt'>, now: Date): boolean`. True when `status !== 'RESOLVED'` and `now > computeDueAt(priority, lastUpdateAt)`.
 
@@ -188,10 +215,12 @@ Approach: use `TZDate` from `@date-fns/tz` to work in São Paulo local time. A s
 ### Task 6: Reopen window and duplicate candidates (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/rules/reopen.ts`, `packages/domain/src/rules/duplicates.ts`, `packages/domain/src/rules/text-similarity.ts`
 - Test: `packages/domain/test/rules/reopen.test.ts`, `packages/domain/test/rules/duplicates.test.ts`
 
 **Interfaces:**
+
 - Produces: `REOPEN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000`
 - Produces: `canReopen(ticket: Pick<Ticket, 'status' | 'resolvedAt'>, now: Date): boolean`
 - Produces: `similarity(a: string, b: string): number` (0..1)
@@ -212,10 +241,12 @@ Similarity: lowercase, strip accents (`normalize('NFD')` and remove combining ma
 ### Task 7: Draft validation (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/rules/draft-validation.ts`
 - Test: `packages/domain/test/rules/draft-validation.test.ts`
 
 **Interfaces:**
+
 - Produces: `validateTicketDraft(input: Partial<TicketDraft>): DraftValidation`, where
   `DraftValidation = { ok: true; draft: TicketDraft; priority: Priority } | { ok: false; missing: (keyof TicketDraft)[] }`
 - Required fields: `type`, `title`, `description`, `category`, `impact`, `urgency`. Strings count as missing when blank after `trim()`. On success, the draft is returned with trimmed strings and `priority = computePriority(impact, urgency)`.
@@ -229,10 +260,12 @@ Similarity: lowercase, strip accents (`normalize('NFD')` and remove combining ma
 ### Task 8: Confidence adjustment (Fabiano)
 
 **Files:**
+
 - Create: `packages/domain/src/rules/confidence.ts`
 - Test: `packages/domain/test/rules/confidence.test.ts`
 
 **Interfaces:**
+
 - Produces: `RuleCheckId = 'MISSING_REQUIRED_FIELDS' | 'POSSIBLE_DUPLICATE' | 'CATEGORY_UNCLEAR' | 'NO_HELP_ARTICLE' | 'TICKET_SERVICE_UNAVAILABLE'`
 - Produces: `RuleCheck = { id: RuleCheckId; passed: boolean; detail: string }`
 - Produces: `CONFIDENCE_PENALTIES: Record<RuleCheckId, number>` = MISSING_REQUIRED_FIELDS `0.3`, POSSIBLE_DUPLICATE `0.2`, CATEGORY_UNCLEAR `0.25`, NO_HELP_ARTICLE `0.1`, TICKET_SERVICE_UNAVAILABLE `0.2`
