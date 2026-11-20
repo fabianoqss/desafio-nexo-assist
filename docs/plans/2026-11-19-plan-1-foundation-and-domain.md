@@ -17,7 +17,7 @@
 | **1 (this)** | Monorepo, CI, `packages/domain` |
 | 2 | `packages/contracts`, `apps/ticket-service` (DB, seed, HTTP API, failure injection), Docker Compose |
 | 3 | `apps/api`: auth, sessions, RBAC, conversations, drafts, console endpoints, ticket client with retry and circuit breaker |
-| 4 | Mastra agent: tools, decision record, confidence, handoff, SSE streaming |
+| 4 | Mastra agent: tools, decision record, confidence, handoff, IT-only scope redirect (intent classification), SSE streaming |
 | 5 | `apps/web`: login, chat, console, profile |
 | 6 | Observability: logs, OpenTelemetry, Prometheus metrics, Grafana, health checks |
 | 7 | Agent evals across 3 providers, Playwright E2E, README, deploy |
@@ -61,13 +61,13 @@
 **Interfaces:**
 - Produces: root scripts `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format`; workspace package `@nexo/domain` exporting from `src/index.ts`.
 
-- [ ] **Step 1:** Root `package.json`: `"private": true`, `"type": "module"`, `"packageManager": "pnpm@12.21.0"`, `"engines": { "node": ">=26" }`, scripts `lint`, `typecheck` (`pnpm -r typecheck`), `test` (`vitest run`), `format`. `pnpm-workspace.yaml` lists `apps/*` and `packages/*`. `.nvmrc` = `26`.
+- [ ] **Step 1:** Root `package.json`: `"private": true`, `"type": "module"`, `"packageManager": "pnpm@12.21.0"`, `"engines": { "node": ">=26" }`, scripts `lint`, `typecheck` (`pnpm -r typecheck`), `test` (`vitest run`), `format`. `pnpm-workspace.yaml` lists `apps/*` and `packages/*`. `.nvmrc` = `26`. `packages/domain/package.json`: name `@nexo/domain`, `"type": "module"`, `"exports": { ".": "./src/index.ts" }` (internal package consumed as TypeScript source, no build step).
 - [ ] **Step 2:** `tsconfig.base.json` with the compiler flags from Global Constraints, `target: ES2024`, `module: NodeNext`, `moduleResolution: NodeNext`. `packages/domain/tsconfig.json` extends it.
 - [ ] **Step 3:** ESLint flat config with `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked`, and Prettier. Root `vitest.config.ts` uses `projects: ['packages/*', 'apps/*']`. The domain `vitest.config.ts` sets coverage thresholds of 90% for lines and branches.
 - [ ] **Step 4:** Add dependencies: `pnpm add -Dw typescript vitest @vitest/coverage-v8 eslint typescript-eslint prettier` and `pnpm --filter @nexo/domain add date-fns @date-fns/tz`. If pnpm reports blocked build scripts, run `pnpm approve-builds` and approve only packages that need them.
 - [ ] **Step 5: Write the smoke test** `packages/domain/test/smoke.test.ts`: `expect(DOMAIN_TIMEZONE).toBe('America/Sao_Paulo')`. Export `DOMAIN_TIMEZONE` from `src/calendar/timezone.ts` through `src/index.ts`.
 - [ ] **Step 6: Verify:** `pnpm install && pnpm lint && pnpm typecheck && pnpm test` all exit 0.
-- [ ] **Step 7:** CI workflow on `push` and `pull_request`: `pnpm install --frozen-lockfile`, lint, typecheck, `pnpm test -- --coverage`, `pnpm audit --audit-level=high`.
+- [ ] **Step 7:** CI workflow on `push` and `pull_request`: `pnpm install --frozen-lockfile`, lint, typecheck, `pnpm test --coverage`, `pnpm audit --audit-level=high`.
 - [ ] **Step 8: Commit and push** on `chore/monorepo-setup`: `chore: set up pnpm monorepo with strict TypeScript, lint, tests and CI`.
 
 ### Task 2: Enums and entities (Fabiano)
@@ -198,12 +198,12 @@ Approach: use `TZDate` from `@date-fns/tz` to work in São Paulo local time. A s
 - Produces: `findDuplicateCandidates(issue: { category: Category; summary: string }, tickets: readonly Ticket[], now: Date): DuplicateCandidate[]`, where `DuplicateCandidate = { ticket: Ticket; similarity: number; action: 'UPDATE' | 'REOPEN' }`
 - Produces: `DUPLICATE_SIMILARITY_THRESHOLD = 0.3`
 
-Similarity: lowercase, strip accents (`normalize('NFD')` and remove combining marks), split on non-letters/digits, drop tokens shorter than 3 characters, then Jaccard index of the two token sets. A candidate has the same category, `similarity(issue.summary, ticket.title + ' ' + ticket.description) >= 0.3`, and is either not resolved (`UPDATE`) or `canReopen` (`REOPEN`). Results are sorted by similarity, highest first.
+Similarity: lowercase, strip accents (`normalize('NFD')` and remove combining marks), split on non-letters/digits, drop tokens shorter than 3 characters, then Jaccard index of the two token sets. A candidate has the same category, `similarity(issue.summary, ticket.title) >= 0.3`, and is either not resolved (`UPDATE`) or `canReopen` (`REOPEN`). Results are sorted by similarity, highest first.
 
 - [ ] **Step 1: Write the failing tests:**
   - `canReopen`: resolved at `2026-12-09T12:00:00Z`; now `2026-12-13T12:00:00Z` → `true`; now `2026-12-16T12:00:00Z` (exactly 7 days) → `true`; now `2026-12-16T12:00:01Z` → `false`; status `IN_PROGRESS` → `false`; status `RESOLVED` without `resolvedAt` → `false`.
   - `similarity('VPN não conecta', 'vpn nao conecta') === 1`.
-  - `findDuplicateCandidates({ category: 'NETWORK_VPN', summary: 'VPN não conecta, erro 809' }, tickets, now)` with: an open NETWORK_VPN ticket "VPN nao conecta no notebook" (→ `UPDATE`), a NETWORK_VPN ticket resolved 3 days ago "Erro 809 na VPN" (→ `REOPEN`), a NETWORK_VPN ticket resolved 10 days ago with the same title (excluded), and an open HARDWARE ticket "VPN não conecta" (excluded, different category). Expect 2 candidates, sorted by similarity.
+  - `findDuplicateCandidates({ category: 'NETWORK_VPN', summary: 'VPN não conecta, erro 809' }, tickets, now)` with: an open NETWORK_VPN ticket "VPN nao conecta no notebook" (→ `UPDATE`), a NETWORK_VPN ticket resolved 3 days ago "Erro 809 na VPN" (→ `REOPEN`), a NETWORK_VPN ticket resolved 10 days ago with the same title (excluded), and an open HARDWARE ticket "VPN não conecta" (excluded, different category). Expect exactly 2 candidates: first the resolved "Erro 809 na VPN" (`REOPEN`, similarity 0.6), then the open one (`UPDATE`, similarity 0.5).
 - [ ] **Step 2: Run** `pnpm test reopen duplicates`. Expected: FAIL.
 - [ ] **Step 3: Implement** the three modules; export the public functions and constants.
 - [ ] **Step 4: Run** `pnpm test reopen duplicates`. Expected: PASS.
@@ -247,5 +247,5 @@ Similarity: lowercase, strip accents (`normalize('NFD')` and remove combining ma
   - `shouldHandoff(0.41)` → `true`; `shouldHandoff(0.6)` → `false`; `shouldHandoff(0.7, 0.8)` → `true`.
 - [ ] **Step 2: Run** `pnpm test confidence`. Expected: FAIL.
 - [ ] **Step 3: Implement** and export.
-- [ ] **Step 4: Run** `pnpm test -- --coverage && pnpm lint && pnpm typecheck`. Expected: PASS, domain coverage ≥ 90%.
+- [ ] **Step 4: Run** `pnpm test --coverage && pnpm lint && pnpm typecheck`. Expected: PASS, domain coverage ≥ 90%.
 - [ ] **Step 5: Commit and push:** `feat(domain): adjust agent confidence with rule checks`. Fabiano opens the PR for `feat/domain-rules`.
