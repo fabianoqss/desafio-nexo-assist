@@ -16,6 +16,8 @@ export { TicketType } from './enums/ticket-type.ts';
 export { Urgency } from './enums/urgency.ts';
 export { computeDueAt, DEADLINES } from './rules/deadline.ts';
 export type { DeadlinePolicy } from './rules/deadline.ts';
+export { REQUIRED_DRAFT_FIELDS, validateTicketDraft } from './rules/draft-validation.ts';
+export type { DraftValidation, RequiredDraftField } from './rules/draft-validation.ts';
 export { DUPLICATE_SIMILARITY_THRESHOLD, findDuplicateCandidates } from './rules/duplicates.ts';
 export type { DuplicateCandidate, DuplicateSearchIssue } from './rules/duplicates.ts';
 export { isOverdue } from './rules/overdue.ts';
