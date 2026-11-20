@@ -15,6 +15,8 @@ export { TicketType } from './enums/ticket-type.ts';
 export { Urgency } from './enums/urgency.ts';
 export { computeDueAt, DEADLINES } from './rules/deadline.ts';
 export type { DeadlinePolicy } from './rules/deadline.ts';
+export { isOverdue } from './rules/overdue.ts';
+export type { OverdueCheckInput } from './rules/overdue.ts';
 export {
   computePriority,
   HANDOFF_FALLBACK_PRIORITY,
