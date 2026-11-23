@@ -7,6 +7,9 @@ export default defineConfig({
       provider: 'v8',
       include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.{ts,tsx}'],
       exclude: [
+        'apps/api/src/main.ts',
+        'apps/api/src/migrate.ts',
+        'apps/api/src/seed/run-seed.ts',
         'apps/ticket-service/src/main.ts',
         'apps/ticket-service/src/migrate.ts',
         'apps/ticket-service/src/seed/run-seed.ts',
@@ -22,6 +25,10 @@ export default defineConfig({
         },
         'packages/server-kit/src/**/*.ts': {
           lines: 90,
+        },
+        'apps/api/src/**/*.ts': {
+          lines: 85,
+          branches: 80,
         },
         'apps/ticket-service/src/**/*.ts': {
           lines: 85,
