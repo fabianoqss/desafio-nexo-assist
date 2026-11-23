@@ -63,6 +63,7 @@ export async function confirmDraft(
   }
 
   const committed = await unitOfWork.run(async ({ drafts, conversations, messages }) => {
+    const conversation = await conversations.findByIdForUpdate(initial.conversationId);
     const locked = await drafts.findByIdForUpdate(draftId);
     if (!locked) {
       throw new NotFoundError('Rascunho não encontrado');
@@ -87,7 +88,6 @@ export async function confirmDraft(
       createdAt: decidedAt,
     });
 
-    const conversation = await conversations.findByIdForUpdate(confirmed.conversationId);
     if (conversation) {
       await conversations.update({ ...conversation, lastMessageAt: decidedAt });
     }

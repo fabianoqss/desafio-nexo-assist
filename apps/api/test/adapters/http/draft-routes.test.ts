@@ -58,6 +58,31 @@ function ticketResponse(id: string, requesterId: string = ana.id): TicketRespons
   };
 }
 
+function createConcurrentTicketService() {
+  const byIdempotencyKey = new Map<string, TicketResponse>();
+  const receivedKeys: (string | null)[] = [];
+  const bothRequests = Promise.withResolvers<undefined>();
+  let sequence = 20330;
+
+  const fetch: typeof globalThis.fetch = async (input, init) => {
+    const request = new Request(input, init);
+    const key = request.headers.get(IDEMPOTENCY_KEY_HEADER);
+    receivedKeys.push(key);
+    if (receivedKeys.length === 2) bothRequests.resolve(undefined);
+    await bothRequests.promise;
+
+    expect(request.headers.get(ACTOR_ID_HEADER)).toBe(ana.id);
+    const existing = key ? byIdempotencyKey.get(key) : undefined;
+    const ticket = existing ?? ticketResponse(`INC-${String(sequence++)}`);
+    if (key && !existing) {
+      byIdempotencyKey.set(key, ticket);
+    }
+    return Response.json(ticket, { status: 201 });
+  };
+
+  return { fetch, byIdempotencyKey, receivedKeys };
+}
+
 describe('rotas de rascunhos com PostgreSQL e cliente resiliente', () => {
   let postgres: Awaited<ReturnType<typeof startPostgres>> | undefined;
   let database: ReturnType<typeof createDatabase> | undefined;
@@ -101,7 +126,7 @@ describe('rotas de rascunhos com PostgreSQL e cliente resiliente', () => {
       metrics,
       logger,
       policy: {
-        timeoutMs: 100,
+        timeoutMs: fetchOverride ? 60_000 : 100,
         maxRetries: 2,
         initialDelayMs: 5,
         maxDelayMs: 10,
@@ -257,25 +282,8 @@ describe('rotas de rascunhos com PostgreSQL e cliente resiliente', () => {
   });
 
   it('deduplica duas confirmações simultâneas com a mesma chave de idempotência no PostgreSQL', async () => {
-    const byIdempotencyKey = new Map<string, TicketResponse>();
-    const receivedKeys: (string | null)[] = [];
-    let sequence = 20330;
-
-    const idempotentFetch: typeof globalThis.fetch = async (input, init) => {
-      const request = new Request(input, init);
-      const key = request.headers.get(IDEMPOTENCY_KEY_HEADER);
-      receivedKeys.push(key);
-      expect(request.headers.get(ACTOR_ID_HEADER)).toBe(ana.id);
-      await new Promise<void>((resolve) => setTimeout(resolve, 25));
-      const existing = key ? byIdempotencyKey.get(key) : undefined;
-      const ticket = existing ?? ticketResponse(`INC-${String(sequence++)}`);
-      if (key && !existing) {
-        byIdempotencyKey.set(key, ticket);
-      }
-      return Response.json(ticket, { status: 201 });
-    };
-
-    const { metrics, login, post, seedDraft } = setup(idempotentFetch);
+    const { fetch, byIdempotencyKey, receivedKeys } = createConcurrentTicketService();
+    const { metrics, login, post, seedDraft } = setup(fetch);
     const { conversation, draft } = await seedDraft();
     const cookie = await login();
 
@@ -307,6 +315,39 @@ describe('rotas de rascunhos com PostgreSQL e cliente resiliente', () => {
     expect(metrics.calls.filter((call) => call.name === 'nexo_tickets_created_total')).toHaveLength(
       1,
     );
+  });
+
+  it('confirma simultaneamente dois rascunhos da mesma conversa no PostgreSQL', async () => {
+    const { fetch } = createConcurrentTicketService();
+    const { login, post, seedDraft } = setup(fetch);
+    const { conversation, draft } = await seedDraft();
+    const secondDraft = await unitOfWork.run(async ({ drafts }) => {
+      const nextDraft = { ...draft, id: await drafts.nextId() };
+      await drafts.insert(nextDraft);
+      return nextDraft;
+    });
+    const cookie = await login();
+
+    const [first, second] = await Promise.all([
+      post(`/drafts/${draft.id}/confirm`, cookie),
+      post(`/drafts/${secondDraft.id}/confirm`, cookie),
+    ]);
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    const firstBody = DraftResponseSchema.parse(await first.json());
+    const secondBody = DraftResponseSchema.parse(await second.json());
+    expect(firstBody).toMatchObject({ id: draft.id, status: DraftStatus.CONFIRMED });
+    expect(secondBody).toMatchObject({ id: secondDraft.id, status: DraftStatus.CONFIRMED });
+    expect([firstBody.ticketId, secondBody.ticketId].sort()).toEqual(['INC-20330', 'INC-20331']);
+
+    const messages = await unitOfWork.run(({ messages: repo }) =>
+      repo.listByConversation(conversation.id, 10),
+    );
+    expect(messages.map(({ author }) => author)).toEqual([
+      MessageAuthor.SYSTEM,
+      MessageAuthor.SYSTEM,
+    ]);
   });
 
   it('retorna 503 preservando PENDING quando o serviço falha e confirma ao recuperar', async () => {

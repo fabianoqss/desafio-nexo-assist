@@ -11,6 +11,7 @@ import {
   TicketServiceUnavailableError,
   type TicketGateway,
 } from '../../../src/application/ports/ticket-gateway.ts';
+import type { UnitOfWork } from '../../../src/application/ports/unit-of-work.ts';
 import { cancelDraft } from '../../../src/application/use-cases/drafts/cancel-draft.ts';
 import { confirmDraft } from '../../../src/application/use-cases/drafts/confirm-draft.ts';
 import { draftIdempotencyKey } from '../../../src/application/use-cases/drafts/execute-draft.ts';
@@ -368,20 +369,33 @@ describe('confirmação de rascunhos', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it('usa o funcionário da sessão como ator mesmo com campo extra no payload do rascunho', async () => {
-    const { deps, draft, create } = await setup({
+  it('usa o funcionário da sessão como ator mesmo com campos extras no payload do rascunho', async () => {
+    const { deps, unitOfWork, draft, create } = await setup();
+    const payload = {
       kind: DraftKind.CREATE,
-      ticket: {
-        ...createTicketRequest,
-        ...({ actorId: bruno.id, requesterId: bruno.id } as Record<string, string>),
-      },
-    });
+      ticket: { ...createTicketRequest, actorId: bruno.id, requesterId: bruno.id },
+    };
+    const withExtraFields = (stored: Draft | undefined) => stored && { ...stored, payload };
+    const unitOfWorkWithExtraFields: UnitOfWork = {
+      run: (work) =>
+        unitOfWork.run((store) =>
+          work({
+            ...store,
+            drafts: {
+              ...store.drafts,
+              findById: async (id) => withExtraFields(await store.drafts.findById(id)),
+              findByIdForUpdate: async (id) =>
+                withExtraFields(await store.drafts.findByIdForUpdate(id)),
+            },
+          }),
+        ),
+    };
     create.mockResolvedValueOnce(ticketResponse({ id: 'INC-20326' }));
 
-    await confirmDraft(deps, ana, draft.id);
+    await confirmDraft({ ...deps, unitOfWork: unitOfWorkWithExtraFields }, ana, draft.id);
 
     expect(create).toHaveBeenCalledWith(
-      { id: ana.id, role: ana.role },
+      { id: ana.id, role: 'EMPLOYEE' },
       expect.anything(),
       `draft-${draft.id}`,
     );
