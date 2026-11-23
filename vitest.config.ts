@@ -7,6 +7,9 @@ export default defineConfig({
       provider: 'v8',
       include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.ts'],
       thresholds: {
+        'packages/contracts/src/**/*.ts': {
+          lines: 90,
+        },
         'packages/domain/src/**/*.ts': {
           lines: 90,
           branches: 90,
