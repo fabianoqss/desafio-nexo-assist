@@ -1,0 +1,16 @@
+@theme {
+  --color-navy: #1b2431;
+  --color-brand: #0062c4;
+  --color-brand-hover: #0052a6;
+  --color-ink: #1b2431;
+  --color-muted: #5b6472;
+  --color-surface: #ffffff;
+  --color-subtle: #f5f7fa;
+  --color-line: #e3e7ed;
+  --color-success: #1f9d55;
+  --color-warning: #d97706;
+  --color-danger: #c62828;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Source Serif 4 Variable', ui-serif, Georgia, serif;
+}
