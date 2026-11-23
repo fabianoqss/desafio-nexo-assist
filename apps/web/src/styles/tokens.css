@@ -2,15 +2,19 @@
   --color-navy: #1b2431;
   --color-brand: #0062c4;
   --color-brand-hover: #0052a6;
+  --color-link: #0069c7;
   --color-ink: #1b2431;
+  --color-ink-soft: #3d4656;
   --color-muted: #5b6472;
   --color-surface: #ffffff;
-  --color-subtle: #f5f7fa;
-  --color-line: #e3e7ed;
-  --color-success: #1f9d55;
-  --color-warning: #d97706;
-  --color-danger: #c62828;
+  --color-subtle: #f6f7f9;
+  --color-line: #e6e8ec;
+  --color-field: #1b24311f;
+  --color-success: #00bd6c;
+  --color-warning: #f5a500;
+  --color-danger: #ee343b;
+  --color-danger-text: #c4161d;
 
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Source Serif 4 Variable', ui-serif, Georgia, serif;
+  --font-sans: 'Schibsted Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Newsreader Variable', ui-serif, Georgia, serif;
 }

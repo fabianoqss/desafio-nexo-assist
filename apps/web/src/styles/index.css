@@ -1,4 +1,4 @@
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/source-serif-4';
+@import '@fontsource-variable/schibsted-grotesk';
+@import '@fontsource-variable/newsreader';
 @import 'tailwindcss';
 @import './tokens.css';
