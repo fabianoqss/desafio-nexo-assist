@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { Category, Priority, TicketStatus } from '../../src/index.ts';
+import { Category, Priority, TicketEventKind, TicketStatus, UserRole } from '../../src/index.ts';
 
 describe('Category', () => {
   it('has exactly the six Annex A categories', () => {
@@ -28,6 +28,26 @@ describe('TicketStatus', () => {
       'IN_PROGRESS',
       'WAITING_ANALYST',
       'APPROVED',
+      'RESOLVED',
+    ]);
+  });
+});
+
+describe('UserRole', () => {
+  it('has exactly the two roles', () => {
+    expect(Object.values(UserRole)).toEqual(['EMPLOYEE', 'ANALYST']);
+  });
+});
+
+describe('TicketEventKind', () => {
+  it('has exactly the seven event kinds', () => {
+    expect(Object.values(TicketEventKind)).toEqual([
+      'CREATED',
+      'INFO_ADDED',
+      'REOPENED',
+      'TRANSFERRED',
+      'ASSUMED',
+      'UPDATED',
       'RESOLVED',
     ]);
   });
