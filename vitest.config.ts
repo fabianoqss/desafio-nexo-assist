@@ -5,11 +5,12 @@ export default defineConfig({
     projects: ['packages/*', 'apps/*'],
     coverage: {
       provider: 'v8',
-      include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.ts'],
+      include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.{ts,tsx}'],
       exclude: [
         'apps/ticket-service/src/main.ts',
         'apps/ticket-service/src/migrate.ts',
         'apps/ticket-service/src/seed/run-seed.ts',
+        'apps/web/src/main.tsx',
       ],
       thresholds: {
         'packages/contracts/src/**/*.ts': {
