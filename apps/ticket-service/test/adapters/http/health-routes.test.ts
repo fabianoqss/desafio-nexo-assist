@@ -1,8 +1,9 @@
 import { ErrorCode, ErrorResponseSchema, REQUEST_ID_HEADER } from '@nexo/contracts';
 import pino from 'pino';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { createLogger } from '../../../src/adapters/logging/logger.ts';
+import { createDatabase } from '../../../src/adapters/persistence/database.ts';
 
 const requestId = '550e8400-e29b-41d4-a716-446655440000';
 const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -90,5 +91,75 @@ describe('rotas de saúde', () => {
       status: 201,
       durationMs,
     });
+  });
+});
+
+describe('prontidão com PostgreSQL', () => {
+  const url = 'postgresql://localhost/nexo_test';
+
+  it.each([
+    { status: 200, discard: false, query: () => Promise.resolve() },
+    { status: 503, discard: true, query: () => Promise.reject(new Error('consulta falhou')) },
+  ])(
+    'responde a /ready com $status conforme o resultado de SELECT 1',
+    async ({ status, discard, query }) => {
+      const { pool, checkReadiness } = createDatabase(url);
+      const client = { query: vi.fn(query), release: vi.fn() };
+      Object.assign(pool, { connect: () => Promise.resolve(client) });
+
+      try {
+        const response = await appWithReadiness(checkReadiness).request('/ready');
+
+        expect(response.status).toBe(status);
+        expect(client.query).toHaveBeenCalledExactlyOnceWith('select 1');
+        expect(client.release).toHaveBeenCalledExactlyOnceWith(discard);
+      } finally {
+        await pool.end();
+      }
+    },
+  );
+
+  it('responde a /ready com 503 e descarta a conexão após 1 s de consulta pendente', async () => {
+    const { pool, checkReadiness } = createDatabase(url);
+    const client = { query: () => Promise.withResolvers<never>().promise, release: vi.fn() };
+    Object.assign(pool, { connect: () => Promise.resolve(client) });
+
+    vi.useFakeTimers();
+    try {
+      const response = appWithReadiness(checkReadiness).request('/ready');
+
+      await vi.advanceTimersByTimeAsync(999);
+      expect(client.release).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect((await response).status).toBe(503);
+      expect(client.release).toHaveBeenCalledExactlyOnceWith(true);
+    } finally {
+      vi.useRealTimers();
+      await pool.end();
+    }
+  });
+
+  it('devolve ao pool a conexão adquirida após o prazo', async () => {
+    const { pool, checkReadiness } = createDatabase(url);
+    const client = { query: vi.fn(), release: vi.fn() };
+    const connection = Promise.withResolvers<typeof client>();
+    Object.assign(pool, { connect: () => connection.promise });
+
+    vi.useFakeTimers();
+    try {
+      const response = appWithReadiness(checkReadiness).request('/ready');
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect((await response).status).toBe(503);
+
+      connection.resolve(client);
+      await connection.promise;
+
+      expect(client.query).not.toHaveBeenCalled();
+      expect(client.release).toHaveBeenCalledExactlyOnceWith();
+    } finally {
+      vi.useRealTimers();
+      await pool.end();
+    }
   });
 });
