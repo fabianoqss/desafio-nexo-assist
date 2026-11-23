@@ -21,28 +21,37 @@ export async function changeTicketStatus(
     throw new ForbiddenError('Somente analistas podem alterar o status de chamados');
   }
 
-  return withIdempotency(deps, actor, 'change-ticket-status', context, async ({ tickets }) => {
-    const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id));
-    const from = ticket.status;
-    const to = request.status;
-    if (!canChangeStatus(from, to)) {
-      throw new ConflictError(ErrorCode.INVALID_STATUS_TRANSITION, 'Transição de status inválida');
-    }
+  return withIdempotency(
+    deps,
+    actor,
+    `change-ticket-status:${id}`,
+    context,
+    async ({ tickets }) => {
+      const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id));
+      const from = ticket.status;
+      const to = request.status;
+      if (!canChangeStatus(from, to)) {
+        throw new ConflictError(
+          ErrorCode.INVALID_STATUS_TRANSITION,
+          'Transição de status inválida',
+        );
+      }
 
-    const now = deps.clock.now();
-    await tickets.update({
-      ...ticket,
-      status: to,
-      lastUpdateAt: now,
-      ...(to === TicketStatus.RESOLVED ? { resolvedAt: now } : {}),
-    });
-    await tickets.appendEvent({
-      ticketId: id,
-      kind: statusChangeEventKind(to),
-      actorId: actor.id,
-      payload: { from, to },
-      createdAt: now,
-    });
-    return id;
-  });
+      const now = deps.clock.now();
+      await tickets.update({
+        ...ticket,
+        status: to,
+        lastUpdateAt: now,
+        ...(to === TicketStatus.RESOLVED ? { resolvedAt: now } : {}),
+      });
+      await tickets.appendEvent({
+        ticketId: id,
+        kind: statusChangeEventKind(to),
+        actorId: actor.id,
+        payload: { from, to },
+        createdAt: now,
+      });
+      return id;
+    },
+  );
 }

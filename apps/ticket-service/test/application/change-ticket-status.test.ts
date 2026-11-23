@@ -45,7 +45,7 @@ describe('changeTicketStatus', () => {
       },
     ]);
     expect(await deps.idempotency.find(analyst.id, context.key)).toMatchObject({
-      operation: 'change-ticket-status',
+      operation: 'change-ticket-status:INC-20400',
     });
   });
 

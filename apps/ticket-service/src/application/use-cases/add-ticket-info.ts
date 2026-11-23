@@ -17,7 +17,7 @@ export function addTicketInfo(
   request: AddTicketInfoRequest,
   context: IdempotencyContext,
 ): Promise<WriteResult> {
-  return withIdempotency(deps, actor, 'add-ticket-info', context, async ({ tickets }) => {
+  return withIdempotency(deps, actor, `add-ticket-info:${id}`, context, async ({ tickets }) => {
     const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id));
     if (ticket.status === TicketStatus.RESOLVED) {
       throw new ConflictError(

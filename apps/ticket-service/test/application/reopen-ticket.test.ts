@@ -66,12 +66,31 @@ describe('reopenTicket', () => {
     );
   });
 
-  it('forbids analysts from reopening a ticket', async () => {
+  it('forbids analysts from reopening a ticket, even a missing one', async () => {
     const deps = setup(dayThree);
 
     await expect(reopenTicket(deps, analyst, ticket.id, request, context)).rejects.toBeInstanceOf(
       ForbiddenError,
     );
+    await expect(reopenTicket(deps, analyst, 'INC-99999', request, context)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+  });
+
+  it('rejects the same key reused on another ticket instead of replaying the first', async () => {
+    const otherTicket = buildTicket({ id: 'INC-20401' });
+    const store = new InMemoryTicketStore([ticket, otherTicket]);
+    const deps = {
+      unitOfWork: store,
+      tickets: store,
+      idempotency: store,
+      clock: new FixedClock(dayThree),
+    };
+    await reopenTicket(deps, ana, ticket.id, request, context);
+
+    await expect(reopenTicket(deps, ana, otherTicket.id, request, context)).rejects.toMatchObject({
+      code: ErrorCode.IDEMPOTENCY_KEY_REUSED,
+    });
   });
 
   it('rejects reopening an open ticket without a resolution timestamp', async () => {

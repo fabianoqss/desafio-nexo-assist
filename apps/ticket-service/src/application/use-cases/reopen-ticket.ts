@@ -10,18 +10,19 @@ import {
   type WriteResult,
 } from '../idempotency/with-idempotency.ts';
 
-export function reopenTicket(
+export async function reopenTicket(
   deps: WriteDependencies,
   actor: Actor,
   id: string,
   request: ReopenTicketRequest,
   context: IdempotencyContext,
 ): Promise<WriteResult> {
-  return withIdempotency(deps, actor, 'reopen-ticket', context, async ({ tickets }) => {
+  if (actor.role !== UserRole.EMPLOYEE) {
+    throw new ForbiddenError('Somente o solicitante pode reabrir o chamado');
+  }
+
+  return withIdempotency(deps, actor, `reopen-ticket:${id}`, context, async ({ tickets }) => {
     const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id));
-    if (actor.role !== UserRole.EMPLOYEE) {
-      throw new ForbiddenError('Somente o solicitante pode reabrir o chamado');
-    }
 
     const { resolvedAt, ...ticketWithoutResolution } = ticket;
     const resolution = {
