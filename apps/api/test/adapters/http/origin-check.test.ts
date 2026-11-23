@@ -1,9 +1,12 @@
 import { ErrorCode, ErrorResponseSchema } from '@nexo/contracts';
 import { createLogger } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
+import { unavailableAgentTurnRunner } from '../../../src/adapters/agent/unavailable-agent-turn-runner.ts';
+import { createInMemoryConversationEventBus } from '../../../src/adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { noopMetrics } from '../../../src/adapters/metrics/noop-metrics.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from '../../../src/adapters/ticket-client/http-ticket-gateway.ts';
 import { FixedClock } from '../../support/fixed-clock.ts';
 import { InMemoryApiStore } from '../../support/in-memory-api-store.ts';
 
@@ -11,8 +14,9 @@ const webOrigin = 'http://localhost:5173';
 
 function createTestApp() {
   const store = new InMemoryApiStore();
+  const logger = createLogger('silent');
   const app = createApp({
-    logger: createLogger('silent'),
+    logger,
     checkReadiness: () => Promise.resolve(true),
     env: { WEB_ORIGIN: webOrigin, TRUST_PROXY: false, SESSION_TTL_HOURS: 12 },
     clock: new FixedClock(),
@@ -21,6 +25,14 @@ function createTestApp() {
     users: store.users,
     sessions: store.sessions,
     unitOfWork: store,
+    eventBus: createInMemoryConversationEventBus(),
+    agentTurnRunner: unavailableAgentTurnRunner,
+    ticketGateway: createHttpTicketGateway({
+      baseUrl: 'http://ticket-service.test',
+      apiToken: 'token-de-teste-para-rotas-de-origem',
+      metrics: noopMetrics,
+      logger,
+    }),
   });
   app.post('/qualquer', (context) => context.body(null, 204));
   return app;

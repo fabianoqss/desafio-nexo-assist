@@ -5,10 +5,13 @@ import { SEED_USERS } from '@nexo/seed-data';
 import { Hono } from 'hono';
 import pino from 'pino';
 import { describe, expect, it, vi } from 'vitest';
+import { unavailableAgentTurnRunner } from '../../../src/adapters/agent/unavailable-agent-turn-runner.ts';
+import { createInMemoryConversationEventBus } from '../../../src/adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { requireRole } from '../../../src/adapters/http/middleware/require-role.ts';
 import { session } from '../../../src/adapters/http/middleware/session.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from '../../../src/adapters/ticket-client/http-ticket-gateway.ts';
 import { FixedClock } from '../../support/fixed-clock.ts';
 import { InMemoryApiStore } from '../../support/in-memory-api-store.ts';
 import { RecordingMetrics } from '../../support/recording-metrics.ts';
@@ -35,6 +38,14 @@ function setup(sessionTtlHours = 12) {
     users: store.users,
     sessions: store.sessions,
     unitOfWork: store,
+    eventBus: createInMemoryConversationEventBus(),
+    agentTurnRunner: unavailableAgentTurnRunner,
+    ticketGateway: createHttpTicketGateway({
+      baseUrl: 'http://ticket-service.test',
+      apiToken: 'token-de-teste-para-rotas-de-autenticacao',
+      metrics,
+      logger,
+    }),
   });
 
   function login(

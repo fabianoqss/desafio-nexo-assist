@@ -1,6 +1,8 @@
 import { serve } from '@hono/node-server';
 import { createLogger, describeError } from '@nexo/server-kit';
+import { unavailableAgentTurnRunner } from './adapters/agent/unavailable-agent-turn-runner.ts';
 import { systemClock } from './adapters/clock/system-clock.ts';
+import { createInMemoryConversationEventBus } from './adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from './adapters/http/app.ts';
 import { noopMetrics } from './adapters/metrics/noop-metrics.ts';
 import { createDatabase } from './adapters/persistence/database.ts';
@@ -8,6 +10,7 @@ import { createDrizzleSessionRepository } from './adapters/persistence/drizzle-s
 import { createDrizzleUnitOfWork } from './adapters/persistence/drizzle-unit-of-work.ts';
 import { createDrizzleUserRepository } from './adapters/persistence/drizzle-user-repository.ts';
 import { createInMemoryRateLimiter } from './adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from './adapters/ticket-client/http-ticket-gateway.ts';
 import { loadEnv } from './config/env.ts';
 
 const env = loadEnv(process.env);
@@ -26,6 +29,14 @@ const app = createApp({
   users: createDrizzleUserRepository(db),
   sessions: createDrizzleSessionRepository(db),
   unitOfWork: createDrizzleUnitOfWork(db),
+  eventBus: createInMemoryConversationEventBus(),
+  agentTurnRunner: unavailableAgentTurnRunner,
+  ticketGateway: createHttpTicketGateway({
+    baseUrl: env.TICKET_SERVICE_URL,
+    apiToken: env.TICKET_SERVICE_API_TOKEN,
+    metrics: noopMetrics,
+    logger,
+  }),
 });
 
 const server = serve(

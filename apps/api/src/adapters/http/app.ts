@@ -2,15 +2,19 @@ import { ErrorCode } from '@nexo/contracts';
 import { ApplicationError, errorHandler, requestLogger } from '@nexo/server-kit';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { contextStorage } from 'hono/context-storage';
 import type { Logger } from 'pino';
 import { corsFor } from './middleware/cors.ts';
 import { jsonBody } from './middleware/json-body.ts';
 import { originCheck } from './middleware/origin-check.ts';
 import type { SessionEnv } from './middleware/session.ts';
 import { authRoutes, type AuthDependencies } from './routes/auth-routes.ts';
+import { conversationRoutes, type ConversationDependencies } from './routes/conversation-routes.ts';
+import { draftRoutes, type DraftDependencies } from './routes/draft-routes.ts';
 import { healthRoutes } from './routes/health-routes.ts';
 
-export interface AppDependencies extends AuthDependencies {
+export interface AppDependencies
+  extends AuthDependencies, ConversationDependencies, DraftDependencies {
   logger: Logger;
   checkReadiness: () => Promise<boolean>;
 }
@@ -20,6 +24,7 @@ export function createApp(deps: AppDependencies): Hono {
   const app = new Hono();
 
   app.onError(errorHandler(logger));
+  app.use(contextStorage());
   app.use(
     requestLogger<{ Variables: Partial<SessionEnv['Variables']> }>(
       logger,
@@ -39,6 +44,8 @@ export function createApp(deps: AppDependencies): Hono {
   );
   app.route('/', healthRoutes(checkReadiness, logger));
   app.route('/auth', authRoutes(deps));
+  app.route('/conversations', conversationRoutes(deps));
+  app.route('/drafts', draftRoutes(deps));
 
   return app;
 }

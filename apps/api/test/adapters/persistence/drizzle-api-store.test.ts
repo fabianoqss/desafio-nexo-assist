@@ -281,6 +281,25 @@ describe('persistência da API com PostgreSQL', () => {
     });
   });
 
+  it('lista as últimas 100 de 120 mensagens em ordem cronológica', async () => {
+    const entry = conversation();
+    const contents = Array.from({ length: 120 }, (_, index) => `Mensagem ${String(index + 1)}`);
+    await unitOfWork.run(async ({ conversations, messages }) => {
+      await conversations.insert(entry);
+      for (const content of contents) {
+        await messages.append({
+          conversationId: entry.id,
+          author: 'SYSTEM',
+          content,
+          createdAt: now,
+        });
+      }
+
+      const history = await messages.listByConversation(entry.id, 100);
+      expect(history.map(({ content }) => content)).toEqual(contents.slice(20));
+    });
+  });
+
   it('calcula agregados da janela de criação e a espera média das conversas assumidas', async () => {
     await unitOfWork.run(async ({ conversations }) => {
       await conversations.insert(
