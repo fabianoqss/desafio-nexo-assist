@@ -1,6 +1,8 @@
 import { serve } from '@hono/node-server';
 import { createLogger, describeError } from '@nexo/server-kit';
+import { unavailableAgentTurnRunner } from './adapters/agent/unavailable-agent-turn-runner.ts';
 import { systemClock } from './adapters/clock/system-clock.ts';
+import { createInMemoryConversationEventBus } from './adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from './adapters/http/app.ts';
 import { noopMetrics } from './adapters/metrics/noop-metrics.ts';
 import { createDatabase } from './adapters/persistence/database.ts';
@@ -26,6 +28,8 @@ const app = createApp({
   users: createDrizzleUserRepository(db),
   sessions: createDrizzleSessionRepository(db),
   unitOfWork: createDrizzleUnitOfWork(db),
+  eventBus: createInMemoryConversationEventBus(),
+  agentTurnRunner: unavailableAgentTurnRunner,
 });
 
 const server = serve(

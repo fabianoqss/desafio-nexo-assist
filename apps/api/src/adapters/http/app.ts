@@ -9,9 +9,10 @@ import { jsonBody } from './middleware/json-body.ts';
 import { originCheck } from './middleware/origin-check.ts';
 import type { SessionEnv } from './middleware/session.ts';
 import { authRoutes, type AuthDependencies } from './routes/auth-routes.ts';
+import { conversationRoutes, type ConversationDependencies } from './routes/conversation-routes.ts';
 import { healthRoutes } from './routes/health-routes.ts';
 
-export interface AppDependencies extends AuthDependencies {
+export interface AppDependencies extends AuthDependencies, ConversationDependencies {
   logger: Logger;
   checkReadiness: () => Promise<boolean>;
 }
@@ -41,6 +42,7 @@ export function createApp(deps: AppDependencies): Hono {
   );
   app.route('/', healthRoutes(checkReadiness, logger));
   app.route('/auth', authRoutes(deps));
+  app.route('/conversations', conversationRoutes(deps));
 
   return app;
 }

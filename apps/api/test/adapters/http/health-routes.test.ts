@@ -2,6 +2,8 @@ import { ErrorCode, ErrorResponseSchema, REQUEST_ID_HEADER } from '@nexo/contrac
 import { createLogger } from '@nexo/server-kit';
 import pino from 'pino';
 import { describe, expect, it } from 'vitest';
+import { unavailableAgentTurnRunner } from '../../../src/adapters/agent/unavailable-agent-turn-runner.ts';
+import { createInMemoryConversationEventBus } from '../../../src/adapters/events/in-memory-conversation-event-bus.ts';
 import { systemClock } from '../../../src/adapters/clock/system-clock.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { noopMetrics } from '../../../src/adapters/metrics/noop-metrics.ts';
@@ -20,6 +22,8 @@ function appWithReadiness(checkReadiness: () => Promise<boolean>, logger = creat
     users: store.users,
     sessions: store.sessions,
     unitOfWork: store,
+    eventBus: createInMemoryConversationEventBus(),
+    agentTurnRunner: unavailableAgentTurnRunner,
   });
 }
 

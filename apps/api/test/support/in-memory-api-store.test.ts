@@ -38,6 +38,26 @@ describe('store da API em memória', () => {
     await expect(store.conversations.findById(closed.id)).resolves.toStrictEqual(closed);
   });
 
+  it('lista as últimas 100 de 120 mensagens em ordem cronológica', async () => {
+    const unitOfWork = new InMemoryApiStore();
+    const entry = conversation(randomUUID());
+    const contents = Array.from({ length: 120 }, (_, index) => `Mensagem ${String(index + 1)}`);
+    await unitOfWork.run(async ({ conversations, messages }) => {
+      await conversations.insert(entry);
+      for (const content of contents) {
+        await messages.append({
+          conversationId: entry.id,
+          author: 'SYSTEM',
+          content,
+          createdAt: now,
+        });
+      }
+
+      const history = await messages.listByConversation(entry.id, 100);
+      expect(history.map(({ content }) => content)).toEqual(contents.slice(20));
+    });
+  });
+
   it('desfaz as gravações e mantém os números consumidos pelas sequências', async () => {
     const store = new InMemoryApiStore();
     const entry = conversation(randomUUID());

@@ -5,7 +5,10 @@ import type { Draft } from '../../src/application/model/draft.ts';
 import type { Message } from '../../src/application/model/message.ts';
 import type { Session } from '../../src/application/model/session.ts';
 import type { User } from '../../src/application/model/user.ts';
-import type { ConsoleFilter } from '../../src/application/ports/conversation-repository.ts';
+import {
+  type ConsoleFilter,
+  OpenConversationTakenError,
+} from '../../src/application/ports/conversation-repository.ts';
 import type { ApiStore, UnitOfWork } from '../../src/application/ports/unit-of-work.ts';
 
 interface StoreState {
@@ -265,7 +268,9 @@ export class InMemoryApiStore implements ApiStore, UnitOfWork {
 
     const open = this.#openConversation(conversation.employeeId);
     if (open && open.id !== conversation.id) {
-      throw uniqueViolation('conversations_one_open_per_employee_idx');
+      throw new OpenConversationTakenError('O funcionário já possui uma conversa aberta', {
+        cause: { code: '23505', constraint: 'conversations_one_open_per_employee_idx' },
+      });
     }
   }
 

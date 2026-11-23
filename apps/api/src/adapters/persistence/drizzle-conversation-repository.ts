@@ -1,9 +1,11 @@
 import { ConversationStatus } from '@nexo/domain';
-import { and, asc, desc, eq, gte, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, DrizzleQueryError, eq, gte, ne, sql } from 'drizzle-orm';
+import { DatabaseError } from 'pg';
 import type { Conversation } from '../../application/model/conversation.ts';
-import type {
-  ConsoleFilter,
-  ConversationRepository,
+import {
+  type ConsoleFilter,
+  type ConversationRepository,
+  OpenConversationTakenError,
 } from '../../application/ports/conversation-repository.ts';
 import type { DatabaseExecutor } from './database.ts';
 import { conversations } from './schema.ts';
@@ -108,7 +110,21 @@ export function createDrizzleConversationRepository(db: DatabaseExecutor): Conve
       return row && toConversation(row);
     },
     async insert(conversation) {
-      await db.insert(conversations).values(toValues(conversation));
+      try {
+        await db.insert(conversations).values(toValues(conversation));
+      } catch (error) {
+        const cause: unknown = error instanceof DrizzleQueryError ? error.cause : error;
+        if (
+          cause instanceof DatabaseError &&
+          cause.code === '23505' &&
+          cause.constraint === 'conversations_one_open_per_employee_idx'
+        ) {
+          throw new OpenConversationTakenError('O funcionário já possui uma conversa aberta', {
+            cause,
+          });
+        }
+        throw error;
+      }
     },
     async update(conversation) {
       const { id, ...values } = toValues(conversation);

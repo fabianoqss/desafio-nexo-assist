@@ -1,6 +1,8 @@
 import { ErrorCode, ErrorResponseSchema } from '@nexo/contracts';
 import { createLogger } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
+import { unavailableAgentTurnRunner } from '../../../src/adapters/agent/unavailable-agent-turn-runner.ts';
+import { createInMemoryConversationEventBus } from '../../../src/adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { noopMetrics } from '../../../src/adapters/metrics/noop-metrics.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
@@ -21,6 +23,8 @@ function createTestApp() {
     users: store.users,
     sessions: store.sessions,
     unitOfWork: store,
+    eventBus: createInMemoryConversationEventBus(),
+    agentTurnRunner: unavailableAgentTurnRunner,
   });
   app.post('/qualquer', (context) => context.body(null, 204));
   return app;

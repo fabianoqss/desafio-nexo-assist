@@ -10,6 +10,8 @@ export interface ConversationStats {
   averageHandoffWaitSeconds: number | null;
 }
 
+export class OpenConversationTakenError extends Error {}
+
 export interface ConversationRepository {
   findOpenByEmployee(employeeId: string): Promise<Conversation | undefined>;
   findById(id: string): Promise<Conversation | undefined>;

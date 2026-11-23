@@ -16,6 +16,8 @@ import {
 } from '@nexo/server-kit';
 import pino from 'pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { unavailableAgentTurnRunner } from '../../../src/adapters/agent/unavailable-agent-turn-runner.ts';
+import { createInMemoryConversationEventBus } from '../../../src/adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { systemClock } from '../../../src/adapters/clock/system-clock.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
@@ -87,6 +89,8 @@ describe('gateway HTTP de chamados', () => {
       users: store.users,
       sessions: store.sessions,
       unitOfWork: store,
+      eventBus: createInMemoryConversationEventBus(),
+      agentTurnRunner: unavailableAgentTurnRunner,
     });
     const query = { requesterId: actor.id, status: 'OPEN', limit: 7 } as const;
     app.get('/test-tickets', async (context) => context.json(await gateway.list(actor, query)));
