@@ -6,15 +6,20 @@ import { systemClock } from '../../../src/adapters/clock/system-clock.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { noopMetrics } from '../../../src/adapters/metrics/noop-metrics.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
+import { InMemoryApiStore } from '../../support/in-memory-api-store.ts';
 
 function appWithReadiness(checkReadiness: () => Promise<boolean>, logger = createLogger('silent')) {
+  const store = new InMemoryApiStore();
   return createApp({
     logger,
     checkReadiness,
-    env: { WEB_ORIGIN: 'http://localhost:5173', TRUST_PROXY: false },
+    env: { WEB_ORIGIN: 'http://localhost:5173', TRUST_PROXY: false, SESSION_TTL_HOURS: 12 },
     clock: systemClock,
     metrics: noopMetrics,
     rateLimiter: createInMemoryRateLimiter(),
+    users: store.users,
+    sessions: store.sessions,
+    unitOfWork: store,
   });
 }
 

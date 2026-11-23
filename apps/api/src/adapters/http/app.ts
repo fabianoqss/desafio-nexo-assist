@@ -1,22 +1,18 @@
-import { errorHandler, requestLogger } from '@nexo/server-kit';
+import { ErrorCode } from '@nexo/contracts';
+import { ApplicationError, errorHandler, requestLogger } from '@nexo/server-kit';
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import type { Logger } from 'pino';
-import type { Clock } from '../../application/ports/clock.ts';
-import type { Metrics } from '../../application/ports/metrics.ts';
-import type { RateLimiter } from '../../application/ports/rate-limiter.ts';
-import type { Env } from '../../config/env.ts';
 import { corsFor } from './middleware/cors.ts';
 import { jsonBody } from './middleware/json-body.ts';
 import { originCheck } from './middleware/origin-check.ts';
+import type { SessionEnv } from './middleware/session.ts';
+import { authRoutes, type AuthDependencies } from './routes/auth-routes.ts';
 import { healthRoutes } from './routes/health-routes.ts';
 
-export interface AppDependencies {
+export interface AppDependencies extends AuthDependencies {
   logger: Logger;
   checkReadiness: () => Promise<boolean>;
-  env: Pick<Env, 'WEB_ORIGIN' | 'TRUST_PROXY'>;
-  clock: Clock;
-  metrics: Metrics;
-  rateLimiter: RateLimiter;
 }
 
 export function createApp(deps: AppDependencies): Hono {
@@ -24,11 +20,25 @@ export function createApp(deps: AppDependencies): Hono {
   const app = new Hono();
 
   app.onError(errorHandler(logger));
-  app.use(requestLogger(logger));
+  app.use(
+    requestLogger<{ Variables: Partial<SessionEnv['Variables']> }>(
+      logger,
+      (context) => context.get('user')?.id,
+    ),
+  );
   app.use(corsFor(env.WEB_ORIGIN));
   app.use(originCheck(env.WEB_ORIGIN));
   app.use(jsonBody());
+  app.use(
+    bodyLimit({
+      maxSize: 16 * 1024,
+      onError: () => {
+        throw new ApplicationError(ErrorCode.PAYLOAD_TOO_LARGE, 'Corpo da requisição muito grande');
+      },
+    }),
+  );
   app.route('/', healthRoutes(checkReadiness, logger));
+  app.route('/auth', authRoutes(deps));
 
   return app;
 }

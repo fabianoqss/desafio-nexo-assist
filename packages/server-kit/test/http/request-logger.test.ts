@@ -55,4 +55,24 @@ describe('logs de requisição', () => {
       durationMs,
     });
   });
+
+  it('registra o identificador fornecido pelo contexto ao fim da requisição', async () => {
+    const lines: string[] = [];
+    const logger = pino({}, { write: (line) => lines.push(line) });
+    interface ProbeEnv {
+      Variables: { userId: string };
+    }
+    const app = new Hono<ProbeEnv>();
+    app.use(requestLogger<ProbeEnv>(logger, (context) => context.get('userId')));
+    app.get('/probe', (context) => {
+      context.set('userId', '00000000-0000-4000-8000-000000000001');
+      return context.text('ok');
+    });
+
+    await app.request('/probe');
+
+    expect(lines.map((line): unknown => JSON.parse(line))).toMatchObject([
+      { userId: '00000000-0000-4000-8000-000000000001' },
+    ]);
+  });
 });

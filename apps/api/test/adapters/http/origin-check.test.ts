@@ -5,17 +5,22 @@ import { createApp } from '../../../src/adapters/http/app.ts';
 import { noopMetrics } from '../../../src/adapters/metrics/noop-metrics.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
 import { FixedClock } from '../../support/fixed-clock.ts';
+import { InMemoryApiStore } from '../../support/in-memory-api-store.ts';
 
 const webOrigin = 'http://localhost:5173';
 
 function createTestApp() {
+  const store = new InMemoryApiStore();
   const app = createApp({
     logger: createLogger('silent'),
     checkReadiness: () => Promise.resolve(true),
-    env: { WEB_ORIGIN: webOrigin, TRUST_PROXY: false },
+    env: { WEB_ORIGIN: webOrigin, TRUST_PROXY: false, SESSION_TTL_HOURS: 12 },
     clock: new FixedClock(),
     metrics: noopMetrics,
     rateLimiter: createInMemoryRateLimiter(),
+    users: store.users,
+    sessions: store.sessions,
+    unitOfWork: store,
   });
   app.post('/qualquer', (context) => context.body(null, 204));
   return app;

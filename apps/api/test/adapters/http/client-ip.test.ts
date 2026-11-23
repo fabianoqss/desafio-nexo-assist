@@ -31,6 +31,23 @@ describe('clientIp', () => {
     expect(await response.text()).toBe('203.0.113.5');
   });
 
+  it.each(['2001:DB8::1', '2001:0db8::1', '2001:db8:0:0:0:0:0:1'])(
+    'usa a mesma forma canônica para o endereço IPv6 %s',
+    async (address) => {
+      const forwarded = await appWithTrustProxy(true).request('/', {
+        headers: { 'X-Forwarded-For': address },
+      });
+      const direct = await appWithTrustProxy(false).request(
+        '/',
+        {},
+        { incoming: { socket: { remoteAddress: address } } },
+      );
+
+      expect(await forwarded.text()).toBe('2001:db8::1');
+      expect(await direct.text()).toBe('2001:db8::1');
+    },
+  );
+
   it.each([
     { description: 'vazio', forwardedFor: '1.1.1.1, ' },
     { description: 'inválido', forwardedFor: '1.1.1.1, exemplo' },

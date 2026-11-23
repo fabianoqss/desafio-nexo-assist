@@ -35,19 +35,36 @@ describe('createInMemoryRateLimiter', () => {
     expect(limiter.consume('login:b', 1, 60_000, start).allowed).toBe(true);
   });
 
-  it('mantém apenas as três janelas inseridas mais recentemente', () => {
-    const limiter = createInMemoryRateLimiter({ maxKeys: 3 });
+  it('descarta a janela que ainda permite requisições e preserva a bloqueada', () => {
+    const limiter = createInMemoryRateLimiter({ maxKeys: 2 });
     const start = new Date('2026-11-23T12:00:00Z');
 
-    for (const key of ['a', 'b', 'c', 'd', 'e']) {
-      expect(limiter.consume(key, 1, 60_000, start).allowed).toBe(true);
-    }
+    expect(limiter.consume('blocked', 1, 60_000, start).allowed).toBe(true);
+    expect(limiter.consume('available', 2, 60_000, start).allowed).toBe(true);
+    expect(limiter.consume('new', 1, 60_000, start).allowed).toBe(true);
 
-    for (const key of ['c', 'd', 'e']) {
-      expect(limiter.consume(key, 1, 60_000, start).allowed).toBe(false);
-    }
-    expect(limiter.consume('b', 1, 60_000, start).allowed).toBe(true);
-    expect(limiter.consume('a', 1, 60_000, start).allowed).toBe(true);
+    expect(limiter.consume('blocked', 1, 60_000, start).allowed).toBe(false);
+    expect(limiter.consume('available', 2, 60_000, start).allowed).toBe(false);
+  });
+
+  it('recusa uma chave nova até expirar a primeira janela quando todas bloqueiam', () => {
+    const limiter = createInMemoryRateLimiter({ maxKeys: 2 });
+    const start = Date.parse('2026-11-23T12:00:00Z');
+
+    limiter.consume('long', 1, 60_000, new Date(start));
+    limiter.consume('short', 2, 2_500, new Date(start));
+    limiter.consume('short', 2, 2_500, new Date(start));
+
+    expect(limiter.consume('new', 5, 60_000, new Date(start))).toEqual({
+      allowed: false,
+      retryAfterSeconds: 3,
+    });
+    expect(limiter.consume('new', 5, 60_000, new Date(start + 2_499))).toEqual({
+      allowed: false,
+      retryAfterSeconds: 1,
+    });
+    expect(limiter.consume('new', 5, 60_000, new Date(start + 2_500)).allowed).toBe(true);
+    expect(limiter.consume('long', 1, 60_000, new Date(start + 2_500)).allowed).toBe(false);
   });
 
   it('remove janelas expiradas antes de descartar uma chave ativa', () => {
@@ -61,8 +78,6 @@ describe('createInMemoryRateLimiter', () => {
     const later = new Date(start + 1_000);
     expect(limiter.consume('new', 1, 60_000, later).allowed).toBe(true);
     expect(limiter.consume('active', 1, 60_000, later).allowed).toBe(false);
-    expect(limiter.consume('expired', 1, 60_000, later).allowed).toBe(true);
-    expect(limiter.consume('active', 1, 60_000, later).allowed).toBe(true);
   });
 
   it('informa pelo menos um segundo quando recusa no instante de expiração da janela', () => {

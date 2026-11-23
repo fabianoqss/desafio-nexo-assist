@@ -3,9 +3,17 @@ import type { RateLimiter } from '../../application/ports/rate-limiter.ts';
 interface Window {
   count: number;
   expiresAt: number;
+  limit: number;
 }
 
 const cleanupIntervalMs = 60_000;
+
+function blocked(expiresAt: number, timestamp: number) {
+  return {
+    allowed: false,
+    retryAfterSeconds: Math.max(1, Math.ceil((expiresAt - timestamp) / 1_000)),
+  };
+}
 
 export function createInMemoryRateLimiter({
   maxKeys = 10_000,
@@ -29,24 +37,26 @@ export function createInMemoryRateLimiter({
       }
 
       if (window === undefined && windows.size >= maxKeys) {
-        for (const oldestKey of windows.keys()) {
-          if (windows.size < maxKeys) {
+        let soonestExpiry: number | undefined;
+        for (const [candidateKey, candidate] of windows) {
+          if (candidate.count < candidate.limit) {
+            windows.delete(candidateKey);
             break;
           }
-          windows.delete(oldestKey);
+          soonestExpiry = Math.min(soonestExpiry ?? candidate.expiresAt, candidate.expiresAt);
+        }
+        if (windows.size >= maxKeys) {
+          return blocked(soonestExpiry ?? timestamp, timestamp);
         }
       }
 
       if (window === undefined || window.expiresAt <= timestamp) {
-        window = { count: 0, expiresAt: timestamp + windowMs };
+        window = { count: 0, expiresAt: timestamp + windowMs, limit };
         windows.set(key, window);
       }
 
-      if (window.count >= limit) {
-        return {
-          allowed: false,
-          retryAfterSeconds: Math.max(1, Math.ceil((window.expiresAt - timestamp) / 1_000)),
-        };
+      if (window.count >= window.limit) {
+        return blocked(window.expiresAt, timestamp);
       }
 
       window.count += 1;
