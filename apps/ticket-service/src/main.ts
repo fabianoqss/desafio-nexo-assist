@@ -10,6 +10,11 @@ import { loadEnv } from './config/env.ts';
 
 const env = loadEnv(process.env);
 const logger = createLogger(env.LOG_LEVEL);
+const failureInjection = { rate: env.FAILURE_RATE, extraLatencyMs: env.EXTRA_LATENCY_MS };
+if (failureInjection.rate > 0 || failureInjection.extraLatencyMs > 0) {
+  logger.warn(failureInjection, 'Injeção de falhas ativa');
+}
+
 const { db, pool, checkReadiness } = createDatabase(env.DATABASE_URL);
 pool.on('error', (error) => {
   logger.error({ err: error }, 'Falha em uma conexão ociosa com o PostgreSQL');
@@ -18,6 +23,7 @@ const app = createApp({
   logger,
   checkReadiness,
   apiToken: env.TICKET_SERVICE_API_TOKEN,
+  failureInjection,
   tickets: createDrizzleTicketRepository(db),
   unitOfWork: createDrizzleUnitOfWork(db),
   idempotency: createDrizzleIdempotencyRepository(db),

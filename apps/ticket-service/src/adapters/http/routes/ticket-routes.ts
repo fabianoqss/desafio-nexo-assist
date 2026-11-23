@@ -29,6 +29,7 @@ import { reopenTicket } from '../../../application/use-cases/reopen-ticket.ts';
 import { searchDuplicates } from '../../../application/use-cases/search-duplicates.ts';
 import { toTicketResponse } from '../mappers/ticket-response-mapper.ts';
 import { actorContext, type ActorVariables } from '../middleware/actor-context.ts';
+import { failureInjection, type FailureInjectionOptions } from '../middleware/failure-injection.ts';
 import {
   idempotencyContext,
   type IdempotencyVariables,
@@ -41,6 +42,7 @@ interface TicketRouteEnv {
 
 interface TicketRouteDependencies extends WriteDependencies {
   apiToken: string;
+  failureInjection?: FailureInjectionOptions;
 }
 
 const jsonDecoder = new TextDecoder('utf-8', { fatal: true });
@@ -66,6 +68,7 @@ export function ticketRoutes(deps: TicketRouteDependencies) {
   routes.use(
     '/tickets/*',
     serviceAuth(deps.apiToken),
+    failureInjection(deps.failureInjection),
     actorContext,
     bodyLimit({
       maxSize: 64 * 1024,
