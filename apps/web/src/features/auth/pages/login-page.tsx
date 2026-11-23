@@ -1,13 +1,16 @@
 import { LoginForm } from '../components/login-form.tsx';
+import { LoginShowcase, type ShowcaseStats } from '../components/login-showcase.tsx';
+
+const previewStats: ShowcaseStats = {
+  averageFirstResponse: '8 s',
+  resolvedWithoutQueue: '72%',
+  analystsOnline: 6,
+};
 
 export function LoginPage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-[5fr_4fr]">
-      <section className="hidden bg-navy lg:block">
-        <div className="">
-          <h1 className="text-[17px] font-bold text-white">Nexo Assist</h1>
-        </div>
-      </section>
+      <LoginShowcase stats={previewStats} />
       <section className="flex flex-col justify-between px-6 py-10 sm:px-14">
         <p className="flex flex-wrap items-center justify-end gap-1.5 text-[13.5px]">
           <span className="text-muted">Problema para entrar?</span>
