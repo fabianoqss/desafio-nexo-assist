@@ -12,9 +12,11 @@ export { DuplicateAction } from './enums/duplicate-action.ts';
 export { Impact } from './enums/impact.ts';
 export { Priority } from './enums/priority.ts';
 export { RuleCheckId } from './enums/rule-check-id.ts';
+export { TicketEventKind } from './enums/ticket-event-kind.ts';
 export { TicketStatus } from './enums/ticket-status.ts';
 export { TicketType } from './enums/ticket-type.ts';
 export { Urgency } from './enums/urgency.ts';
+export { UserRole } from './enums/user-role.ts';
 export {
   adjustConfidence,
   CONFIDENCE_PENALTIES,
@@ -38,4 +40,6 @@ export {
 export type { HandoffPriorityInput } from './rules/priority.ts';
 export { canReopen, REOPEN_WINDOW_MS } from './rules/reopen.ts';
 export type { ReopenCheckInput } from './rules/reopen.ts';
+export { canChangeStatus, statusChangeEventKind } from './rules/status-transition.ts';
+export type { StatusChangeTarget } from './rules/status-transition.ts';
 export { similarity } from './rules/text-similarity.ts';
