@@ -91,6 +91,7 @@ describe('gateway HTTP de chamados', () => {
       unitOfWork: store,
       eventBus: createInMemoryConversationEventBus(),
       agentTurnRunner: unavailableAgentTurnRunner,
+      ticketGateway: gateway,
     });
     const query = { requesterId: actor.id, status: 'OPEN', limit: 7 } as const;
     app.get('/test-tickets', async (context) => context.json(await gateway.list(actor, query)));

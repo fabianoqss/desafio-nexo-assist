@@ -11,6 +11,7 @@ import { unavailableAgentTurnRunner } from '../../../src/adapters/agent/unavaila
 import { createInMemoryConversationEventBus } from '../../../src/adapters/events/in-memory-conversation-event-bus.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from '../../../src/adapters/ticket-client/http-ticket-gateway.ts';
 import type {
   AgentTurnEvent,
   AgentTurnRunner,
@@ -51,6 +52,12 @@ function setup(agentTurnRunner: AgentTurnRunner = unavailableAgentTurnRunner, pi
     unitOfWork,
     eventBus,
     agentTurnRunner,
+    ticketGateway: createHttpTicketGateway({
+      baseUrl: 'http://ticket-service.test',
+      apiToken: 'token-de-teste-para-rotas-de-conversas',
+      metrics,
+      logger,
+    }),
     pingIntervalMs,
   });
 

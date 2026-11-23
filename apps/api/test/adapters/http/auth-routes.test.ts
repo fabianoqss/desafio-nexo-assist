@@ -11,6 +11,7 @@ import { createApp } from '../../../src/adapters/http/app.ts';
 import { requireRole } from '../../../src/adapters/http/middleware/require-role.ts';
 import { session } from '../../../src/adapters/http/middleware/session.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from '../../../src/adapters/ticket-client/http-ticket-gateway.ts';
 import { FixedClock } from '../../support/fixed-clock.ts';
 import { InMemoryApiStore } from '../../support/in-memory-api-store.ts';
 import { RecordingMetrics } from '../../support/recording-metrics.ts';
@@ -39,6 +40,12 @@ function setup(sessionTtlHours = 12) {
     unitOfWork: store,
     eventBus: createInMemoryConversationEventBus(),
     agentTurnRunner: unavailableAgentTurnRunner,
+    ticketGateway: createHttpTicketGateway({
+      baseUrl: 'http://ticket-service.test',
+      apiToken: 'token-de-teste-para-rotas-de-autenticacao',
+      metrics,
+      logger,
+    }),
   });
 
   function login(

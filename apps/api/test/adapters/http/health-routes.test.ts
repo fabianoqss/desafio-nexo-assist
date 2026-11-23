@@ -8,6 +8,7 @@ import { systemClock } from '../../../src/adapters/clock/system-clock.ts';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { noopMetrics } from '../../../src/adapters/metrics/noop-metrics.ts';
 import { createInMemoryRateLimiter } from '../../../src/adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from '../../../src/adapters/ticket-client/http-ticket-gateway.ts';
 import { InMemoryApiStore } from '../../support/in-memory-api-store.ts';
 
 function appWithReadiness(checkReadiness: () => Promise<boolean>, logger = createLogger('silent')) {
@@ -24,6 +25,12 @@ function appWithReadiness(checkReadiness: () => Promise<boolean>, logger = creat
     unitOfWork: store,
     eventBus: createInMemoryConversationEventBus(),
     agentTurnRunner: unavailableAgentTurnRunner,
+    ticketGateway: createHttpTicketGateway({
+      baseUrl: 'http://ticket-service.test',
+      apiToken: 'token-de-teste-para-rotas-de-saude',
+      metrics: noopMetrics,
+      logger,
+    }),
   });
 }
 

@@ -10,6 +10,7 @@ import { createDrizzleSessionRepository } from './adapters/persistence/drizzle-s
 import { createDrizzleUnitOfWork } from './adapters/persistence/drizzle-unit-of-work.ts';
 import { createDrizzleUserRepository } from './adapters/persistence/drizzle-user-repository.ts';
 import { createInMemoryRateLimiter } from './adapters/rate-limit/in-memory-rate-limiter.ts';
+import { createHttpTicketGateway } from './adapters/ticket-client/http-ticket-gateway.ts';
 import { loadEnv } from './config/env.ts';
 
 const env = loadEnv(process.env);
@@ -30,6 +31,12 @@ const app = createApp({
   unitOfWork: createDrizzleUnitOfWork(db),
   eventBus: createInMemoryConversationEventBus(),
   agentTurnRunner: unavailableAgentTurnRunner,
+  ticketGateway: createHttpTicketGateway({
+    baseUrl: env.TICKET_SERVICE_URL,
+    apiToken: env.TICKET_SERVICE_API_TOKEN,
+    metrics: noopMetrics,
+    logger,
+  }),
 });
 
 const server = serve(
