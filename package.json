@@ -12,7 +12,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose --env-file .env -f infra/docker-compose.yml up -d --build",
+    "infra:down": "docker compose --env-file .env -f infra/docker-compose.yml down",
+    "infra:logs": "docker compose --env-file .env -f infra/docker-compose.yml logs -f"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
