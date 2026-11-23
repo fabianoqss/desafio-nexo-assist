@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { Category, Priority, TicketEventKind, TicketStatus, UserRole } from '../../src/index.ts';
+import {
+  Category,
+  ConversationAction,
+  ConversationStatus,
+  DraftKind,
+  DraftStatus,
+  HandoffReason,
+  MessageAuthor,
+  Priority,
+  TicketEventKind,
+  TicketStatus,
+  UserRole,
+} from '../../src/index.ts';
 
 describe('Category', () => {
   it('has exactly the six Annex A categories', () => {
@@ -12,6 +24,67 @@ describe('Category', () => {
       'EMAIL',
       'OTHER',
     ]);
+  });
+});
+
+describe('ConversationAction', () => {
+  it('has exactly the four actions', () => {
+    expect(ConversationAction).toEqual({
+      HANDOFF: 'HANDOFF',
+      ASSUME: 'ASSUME',
+      RETURN_TO_AGENT: 'RETURN_TO_AGENT',
+      CLOSE: 'CLOSE',
+    });
+  });
+});
+
+describe('ConversationStatus', () => {
+  it('has exactly the four statuses', () => {
+    expect(ConversationStatus).toEqual({
+      WITH_AGENT: 'WITH_AGENT',
+      WAITING_ANALYST: 'WAITING_ANALYST',
+      WITH_ANALYST: 'WITH_ANALYST',
+      CLOSED: 'CLOSED',
+    });
+  });
+});
+
+describe('DraftKind', () => {
+  it('has exactly the three draft kinds', () => {
+    expect(DraftKind).toEqual({ CREATE: 'CREATE', UPDATE: 'UPDATE', REOPEN: 'REOPEN' });
+  });
+});
+
+describe('DraftStatus', () => {
+  it('has exactly the three statuses', () => {
+    expect(DraftStatus).toEqual({
+      PENDING: 'PENDING',
+      CONFIRMED: 'CONFIRMED',
+      CANCELLED: 'CANCELLED',
+    });
+  });
+});
+
+describe('HandoffReason', () => {
+  it('has exactly the five reasons', () => {
+    expect(HandoffReason).toEqual({
+      EMPLOYEE_REQUEST: 'EMPLOYEE_REQUEST',
+      CRITICAL_CASE: 'CRITICAL_CASE',
+      OVERDUE_TICKET: 'OVERDUE_TICKET',
+      LOW_CONFIDENCE: 'LOW_CONFIDENCE',
+      MESSAGE_LIMIT: 'MESSAGE_LIMIT',
+    });
+  });
+});
+
+describe('MessageAuthor', () => {
+  it('has exactly the four authors', () => {
+    expect(MessageAuthor).toEqual({
+      EMPLOYEE: 'EMPLOYEE',
+      AGENT: 'AGENT',
+      ANALYST: 'ANALYST',
+      SYSTEM: 'SYSTEM',
+    });
   });
 });
 
