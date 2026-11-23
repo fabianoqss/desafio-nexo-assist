@@ -2,6 +2,7 @@ import { ErrorCode } from '@nexo/contracts';
 import { ApplicationError, errorHandler, requestLogger } from '@nexo/server-kit';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { contextStorage } from 'hono/context-storage';
 import type { Logger } from 'pino';
 import { corsFor } from './middleware/cors.ts';
 import { jsonBody } from './middleware/json-body.ts';
@@ -20,6 +21,7 @@ export function createApp(deps: AppDependencies): Hono {
   const app = new Hono();
 
   app.onError(errorHandler(logger));
+  app.use(contextStorage());
   app.use(
     requestLogger<{ Variables: Partial<SessionEnv['Variables']> }>(
       logger,
