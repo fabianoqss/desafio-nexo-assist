@@ -142,6 +142,30 @@ describe('tratamento de erros HTTP', () => {
     expect(lines.join('')).not.toContain('db password leaked');
   });
 
+  it('loga o código direto do banco sem o cliente, a mensagem nem a pilha do erro', async () => {
+    const lines: string[] = [];
+    const logger = pino({}, { write: (line) => lines.push(line) });
+    const app = appWithLogger(logger);
+    const error = Object.assign(new Error('mensagem privada'), {
+      code: '08006',
+      client: { password: 'credencial do cliente' },
+      stack: 'pilha privada',
+    });
+    app.get('/probe', () => {
+      throw error;
+    });
+
+    expect((await app.request('/probe')).status).toBe(500);
+    expect(lines.map((line): unknown => JSON.parse(line))).toMatchObject([
+      { level: 50, errorName: 'Error', databaseErrorCode: '08006' },
+      { level: 30, path: '/probe', status: 500 },
+    ]);
+    const logs = lines.join('');
+    expect(logs).not.toMatch(
+      /mensagem privada|credencial do cliente|pilha privada|"(client|message|stack|err)":/,
+    );
+  });
+
   it('registra a falha em uma rota de chamados sem os dados do erro', async () => {
     const lines: string[] = [];
     const logger = pino({}, { write: (line) => lines.push(line) });

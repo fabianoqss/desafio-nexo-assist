@@ -1,8 +1,9 @@
 import { TicketStatus } from '@nexo/domain';
 import { z } from 'zod';
+import { LowercaseUuidSchema } from '../../common/uuid.ts';
 
 export const ListTicketsQuerySchema = z.object({
-  requesterId: z.uuid().exactOptional(),
+  requesterId: LowercaseUuidSchema.exactOptional(),
   status: z.enum(TicketStatus).exactOptional(),
   limit: z
     .union([z.string(), z.number()])

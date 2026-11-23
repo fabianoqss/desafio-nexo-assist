@@ -2,6 +2,7 @@ import { UserRole } from '@nexo/domain';
 import { describe, expect, it } from 'vitest';
 import {
   assertCanRead,
+  lockScopeFor,
   resolveRequesterScope,
 } from '../../src/application/access/access-policy.ts';
 import type { Actor } from '../../src/application/access/actor.ts';
@@ -25,6 +26,16 @@ describe('resolveRequesterScope', () => {
   it('uses the optional requester filter for an analyst', () => {
     expect(resolveRequesterScope(analyst)).toBeUndefined();
     expect(resolveRequesterScope(analyst, brunoId)).toBe(brunoId);
+  });
+});
+
+describe('lockScopeFor', () => {
+  it('restringe o bloqueio aos chamados do funcionário', () => {
+    expect(lockScopeFor(ana)).toBe(ana.id);
+  });
+
+  it('permite que o analista bloqueie chamados de qualquer solicitante', () => {
+    expect(lockScopeFor(analyst)).toBeUndefined();
   });
 });
 

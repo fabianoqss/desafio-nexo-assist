@@ -163,6 +163,18 @@ describe('rotas HTTP de chamados com PostgreSQL', () => {
     expect(TicketResponseSchema.parse(await detail.json())).toEqual(ticket);
   });
 
+  it('permite criar e consultar o chamado com o UUID do funcionário em maiúsculas', async () => {
+    const requesterId = '26409ee7-73de-4218-9b0e-2b71ba1e12dd';
+    const actorId = requesterId.toUpperCase();
+    const ticket = await createAs(actorId);
+    const response = await app.request(`/tickets/${ticket.id}`, {
+      headers: { ...employeeHeaders, [ACTOR_ID_HEADER]: actorId },
+    });
+
+    expect(response.status).toBe(200);
+    expect(TicketResponseSchema.parse(await response.json())).toEqual({ ...ticket, requesterId });
+  });
+
   it('grava um único chamado quando duas criações com a mesma chave chegam juntas', async () => {
     const body = JSON.stringify(draft);
     const responses = await Promise.all([
@@ -195,6 +207,15 @@ describe('rotas HTTP de chamados com PostgreSQL', () => {
       '/tickets',
       'invalid-category',
       JSON.stringify({ ...draft, category: 'HR' }),
+    );
+    await expectError(response, 400, ErrorCode.VALIDATION_FAILED);
+  });
+
+  it('retorna 400 quando o título contém U+0000', async () => {
+    const response = await post(
+      '/tickets',
+      'invalid-title',
+      JSON.stringify({ ...draft, title: 'VPN\u0000não conecta' }),
     );
     await expectError(response, 400, ErrorCode.VALIDATION_FAILED);
   });

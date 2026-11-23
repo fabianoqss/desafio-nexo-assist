@@ -24,8 +24,17 @@ class DrizzleTicketRepository implements TicketRepository {
     this.#db = db;
   }
 
-  private selectById(id: string) {
-    return this.#db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+  private selectById(id: string, requesterId?: string) {
+    return this.#db
+      .select()
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.id, id),
+          requesterId === undefined ? undefined : eq(tickets.requesterId, requesterId),
+        ),
+      )
+      .limit(1);
   }
 
   async findById(id: string): Promise<Ticket | undefined> {
@@ -33,8 +42,8 @@ class DrizzleTicketRepository implements TicketRepository {
     return row && toTicket(row);
   }
 
-  async findByIdForUpdate(id: string): Promise<Ticket | undefined> {
-    const [row] = await this.selectById(id).for('update');
+  async findByIdForUpdate(id: string, requesterId?: string): Promise<Ticket | undefined> {
+    const [row] = await this.selectById(id, requesterId).for('update');
     return row && toTicket(row);
   }
 

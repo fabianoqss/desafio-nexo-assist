@@ -35,4 +35,4 @@ Comandos úteis: `pnpm infra:logs`, `pnpm infra:down`, `pnpm test` (os testes de
 
 Para simular o sistema legado instável, ajuste `FAILURE_RATE` (0 a 1) e `EXTRA_LATENCY_MS` no `.env` e rode `pnpm infra:up` de novo.
 
-As portas são publicadas só em `127.0.0.1`. Cada serviço tem seu próprio banco e usuário (`nexo_tickets`, `nexo_api`), sem acesso ao banco do outro.
+As portas são publicadas só em `127.0.0.1`. Cada serviço tem seu próprio banco (`nexo_tickets`, `nexo_api`), sem acesso ao banco do outro. No `nexo_tickets`, as migrações rodam com o papel dono (`nexo_tickets_owner`) e o serviço roda com `nexo_tickets_app`, que só pode ler, inserir e atualizar: sem DDL, `DELETE` ou `TRUNCATE`.
