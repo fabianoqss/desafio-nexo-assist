@@ -1,0 +1,68 @@
+name: nexo-assist
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      TICKETS_DB_PASSWORD: ${TICKETS_DB_PASSWORD:?}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ticket-service-migrate:
+    build:
+      context: ..
+      dockerfile: apps/ticket-service/Dockerfile
+    image: nexo-assist/ticket-service:local
+    command: ['node', 'dist/migrate.js']
+    environment:
+      DATABASE_URL: postgres://nexo_tickets_app:${TICKETS_DB_PASSWORD:?}@postgres:5432/nexo_tickets
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+
+  ticket-service:
+    image: nexo-assist/ticket-service:local
+    environment:
+      DATABASE_URL: postgres://nexo_tickets_app:${TICKETS_DB_PASSWORD:?}@postgres:5432/nexo_tickets
+      TICKET_SERVICE_API_TOKEN: ${TICKET_SERVICE_API_TOKEN:?}
+      FAILURE_RATE: ${FAILURE_RATE:-0}
+      EXTRA_LATENCY_MS: ${EXTRA_LATENCY_MS:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      ticket-service-migrate:
+        condition: service_completed_successfully
+    ports:
+      - '127.0.0.1:4001:4001'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4001/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  pgdata:

@@ -2,5 +2,10 @@ packages:
   - apps/*
   - packages/*
 
+allowBuilds:
+  cpu-features: false
+  esbuild: false
+  protobufjs: false
+  ssh2: false
 engineStrict: true
 saveExact: true

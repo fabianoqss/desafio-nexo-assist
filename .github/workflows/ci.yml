@@ -34,3 +34,4 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test --coverage
       - run: pnpm audit --audit-level=high
+      - run: docker build -f apps/ticket-service/Dockerfile .
