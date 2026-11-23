@@ -1,39 +1,27 @@
-import {
-  ACTOR_ID_HEADER,
-  ACTOR_ROLE_HEADER,
-  ErrorCode,
-  ErrorResponseSchema,
-  REQUEST_ID_HEADER,
-  SERVICE_AUTH_HEADER,
-} from '@nexo/contracts';
-import pino from 'pino';
-import { describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
-import { createApp } from '../../../src/adapters/http/app.ts';
-import { createLogger } from '../../../src/adapters/logging/logger.ts';
+import { ErrorCode, ErrorResponseSchema, REQUEST_ID_HEADER } from '@nexo/contracts';
 import {
   ApplicationError,
   ConflictError,
+  createLogger,
+  errorHandler,
   ForbiddenError,
+  HTTP_STATUS_BY_ERROR_CODE,
   NotFoundError,
+  RateLimitedError,
+  requestLogger,
+  UnauthorizedError,
   ValidationError,
-} from '../../../src/application/errors/application-error.ts';
-import { FixedClock } from '../../support/fixed-clock.ts';
-import { InMemoryTicketStore } from '../../support/in-memory-ticket-store.ts';
+} from '@nexo/server-kit';
+import { Hono } from 'hono';
+import pino from 'pino';
+import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
-const checkReadiness = () => Promise.resolve(true);
-const apiToken = 'token-de-servico-privado-para-testes';
-
-function appWithLogger(logger = createLogger('silent'), store = new InMemoryTicketStore()) {
-  return createApp({
-    logger,
-    checkReadiness,
-    apiToken,
-    tickets: store,
-    unitOfWork: store,
-    idempotency: store,
-    clock: new FixedClock(),
-  });
+function appWithLogger(logger = createLogger('silent')) {
+  const app = new Hono();
+  app.onError(errorHandler(logger));
+  app.use(requestLogger(logger));
+  return app;
 }
 
 describe('tratamento de erros HTTP', () => {
@@ -44,7 +32,7 @@ describe('tratamento de erros HTTP', () => {
       status: 400,
     },
     {
-      error: new ApplicationError(ErrorCode.UNAUTHORIZED, 'Token inválido'),
+      error: new UnauthorizedError('UNAUTHORIZED'),
       code: ErrorCode.UNAUTHORIZED,
       status: 401,
     },
@@ -99,6 +87,57 @@ describe('tratamento de erros HTTP', () => {
     expect(body.error.message).toBe(
       code === ErrorCode.INTERNAL_ERROR ? 'Erro interno do servidor' : error.message,
     );
+  });
+
+  it.each([
+    { code: 'UNSUPPORTED_MEDIA_TYPE', status: 415 },
+    { code: 'MESSAGE_LIMIT_REACHED', status: 409 },
+    { code: 'CONVERSATION_STATE_CONFLICT', status: 409 },
+    { code: 'DRAFT_NOT_PENDING', status: 409 },
+    { code: 'TICKET_SERVICE_UNAVAILABLE', status: 503 },
+  ] as const)('converte $code em HTTP $status', async ({ code, status }) => {
+    const app = appWithLogger();
+    app.get('/probe', () => {
+      throw new ApplicationError(code, 'Falha esperada');
+    });
+
+    const response = await app.request('/probe');
+
+    expect(response.status).toBe(status);
+    expect(ErrorResponseSchema.parse(await response.json()).error.code).toBe(code);
+  });
+
+  it('retorna 401 para credenciais inválidas', async () => {
+    const app = appWithLogger();
+    app.get('/probe', () => {
+      throw new UnauthorizedError('INVALID_CREDENTIALS');
+    });
+
+    const response = await app.request('/probe');
+
+    expect(response.status).toBe(401);
+    expect(ErrorResponseSchema.parse(await response.json()).error.code).toBe(
+      ErrorCode.INVALID_CREDENTIALS,
+    );
+  });
+
+  it('retorna 429 e informa em segundos quando tentar novamente', async () => {
+    const app = appWithLogger();
+    app.get('/probe', () => {
+      throw new RateLimitedError(30);
+    });
+
+    const response = await app.request('/probe');
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get('Retry-After')).toBe('30');
+    expect(ErrorResponseSchema.parse(await response.json()).error.code).toBe(
+      ErrorCode.RATE_LIMITED,
+    );
+  });
+
+  it('mapeia todos os códigos de erro para status HTTP', () => {
+    expect(Object.keys(HTTP_STATUS_BY_ERROR_CODE).sort()).toEqual(Object.values(ErrorCode).sort());
   });
 
   it('converte ZodError em falha de validação sem expor a entrada', async () => {
@@ -164,33 +203,5 @@ describe('tratamento de erros HTTP', () => {
     expect(logs).not.toMatch(
       /mensagem privada|credencial do cliente|pilha privada|"(client|message|stack|err)":/,
     );
-  });
-
-  it('registra a falha em uma rota de chamados sem os dados do erro', async () => {
-    const lines: string[] = [];
-    const logger = pino({}, { write: (line) => lines.push(line) });
-    const store = new InMemoryTicketStore();
-    const bodyContent = 'descrição privada de um erro no banco';
-    vi.spyOn(store, 'list').mockRejectedValue(new Error(`${bodyContent}: ${apiToken}`));
-    const app = appWithLogger(logger, store);
-
-    const response = await app.request('/tickets', {
-      headers: {
-        [SERVICE_AUTH_HEADER]: `Bearer ${apiToken}`,
-        [ACTOR_ID_HEADER]: '550e8400-e29b-41d4-a716-446655440000',
-        [ACTOR_ROLE_HEADER]: 'EMPLOYEE',
-      },
-    });
-
-    expect(response.status).toBe(500);
-    expect(ErrorResponseSchema.parse(await response.json()).error.code).toBe(
-      ErrorCode.INTERNAL_ERROR,
-    );
-    expect(lines.map((line): unknown => JSON.parse(line))).toMatchObject([
-      { level: 50, requestId: response.headers.get(REQUEST_ID_HEADER) },
-      { level: 30, path: '/tickets', status: 500 },
-    ]);
-    expect(lines.join('')).not.toContain(bodyContent);
-    expect(lines.join('')).not.toContain(apiToken);
   });
 });

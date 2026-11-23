@@ -8,9 +8,9 @@ import {
   Urgency,
   UserRole,
 } from '@nexo/domain';
+import { NotFoundError } from '@nexo/server-kit';
 import { describe, expect, it, vi } from 'vitest';
 import type { Actor } from '../../src/application/access/actor.ts';
-import { NotFoundError } from '../../src/application/errors/application-error.ts';
 import { withIdempotency } from '../../src/application/idempotency/with-idempotency.ts';
 import {
   IdempotencyKeyTakenError,

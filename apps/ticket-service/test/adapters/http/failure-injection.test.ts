@@ -7,10 +7,10 @@ import {
   SERVICE_AUTH_HEADER,
 } from '@nexo/contracts';
 import { UserRole } from '@nexo/domain';
+import { createLogger } from '@nexo/server-kit';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import type { FailureInjectionOptions } from '../../../src/adapters/http/middleware/failure-injection.ts';
-import { createLogger } from '../../../src/adapters/logging/logger.ts';
 import { FixedClock } from '../../support/fixed-clock.ts';
 import { InMemoryTicketStore } from '../../support/in-memory-ticket-store.ts';
 

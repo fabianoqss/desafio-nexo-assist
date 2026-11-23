@@ -1,4 +1,5 @@
 import { UserRole } from '@nexo/domain';
+import { ForbiddenError, NotFoundError } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
 import {
   assertCanRead,
@@ -6,7 +7,6 @@ import {
   resolveRequesterScope,
 } from '../../src/application/access/access-policy.ts';
 import type { Actor } from '../../src/application/access/actor.ts';
-import { ForbiddenError, NotFoundError } from '../../src/application/errors/application-error.ts';
 import { buildTicket } from '../support/ticket-builder.ts';
 
 const ana: Actor = { id: '00000000-0000-4000-8000-000000000001', role: UserRole.EMPLOYEE };

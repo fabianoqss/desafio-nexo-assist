@@ -1,10 +1,10 @@
 import { canReopen, isOverdue, Priority, UserRole } from '@nexo/domain';
+import { SEED_USERS } from '@nexo/seed-data';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/adapters/persistence/database.ts';
 import { createDrizzleUnitOfWork } from '../../src/adapters/persistence/drizzle-unit-of-work.ts';
 import { ticketEvents, tickets } from '../../src/adapters/persistence/schema.ts';
 import { buildSeedTickets } from '../../src/seed/seed-tickets.ts';
-import { SEED_USERS } from '../../src/seed/seed-users.ts';
 import { seedTickets } from '../../src/seed/seed.ts';
 import { InMemoryTicketStore } from '../support/in-memory-ticket-store.ts';
 import { startPostgres } from '../support/postgres-container.ts';

@@ -23,7 +23,6 @@ describe('loadEnv', () => {
     expect(
       loadEnv({
         ...requiredEnv,
-        DATABASE_URL: 'postgresql://x@localhost/x',
         NODE_ENV: 'production',
         HOST: '127.0.0.1',
         PORT: '5000',
@@ -33,7 +32,6 @@ describe('loadEnv', () => {
       }),
     ).toEqual({
       ...requiredEnv,
-      DATABASE_URL: 'postgresql://x@localhost/x',
       NODE_ENV: 'production',
       HOST: '127.0.0.1',
       PORT: 5000,

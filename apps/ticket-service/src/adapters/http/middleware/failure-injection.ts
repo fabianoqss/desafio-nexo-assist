@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { ErrorCode } from '@nexo/contracts';
+import { ApplicationError } from '@nexo/server-kit';
 import type { MiddlewareHandler } from 'hono';
-import { ApplicationError } from '../../../application/errors/application-error.ts';
 
 export interface FailureInjectionOptions {
   rate: number;

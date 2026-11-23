@@ -20,6 +20,9 @@ export default defineConfig({
           lines: 90,
           branches: 90,
         },
+        'packages/server-kit/src/**/*.ts': {
+          lines: 90,
+        },
         'apps/ticket-service/src/**/*.ts': {
           lines: 85,
           branches: 80,

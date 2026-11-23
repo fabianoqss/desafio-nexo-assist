@@ -1,5 +1,5 @@
 import { computePriority, type Ticket, TicketStatus } from '@nexo/domain';
-import { SEED_USERS } from './seed-users.ts';
+import { SEED_USERS } from '@nexo/seed-data';
 
 const minuteMs = 60_000;
 const hourMs = 60 * minuteMs;

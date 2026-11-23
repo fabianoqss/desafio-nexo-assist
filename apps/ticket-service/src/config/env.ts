@@ -1,5 +1,5 @@
+import { DatabaseUrlSchema } from '@nexo/server-kit';
 import { z } from 'zod';
-import { DatabaseUrlSchema } from './database-url.ts';
 
 const numericInput = z.string().trim().min(1).transform(Number);
 const envSchema = z.object({

@@ -1,7 +1,7 @@
 import { Priority, UserRole } from '@nexo/domain';
+import { NotFoundError } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
 import type { Actor } from '../../src/application/access/actor.ts';
-import { NotFoundError } from '../../src/application/errors/application-error.ts';
 import { getTicket } from '../../src/application/use-cases/get-ticket.ts';
 import { FixedClock } from '../support/fixed-clock.ts';
 import { InMemoryTicketStore } from '../support/in-memory-ticket-store.ts';

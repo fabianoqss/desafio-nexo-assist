@@ -16,6 +16,8 @@
     "@hono/zod-validator": "0.9.1",
     "@nexo/contracts": "workspace:*",
     "@nexo/domain": "workspace:*",
+    "@nexo/seed-data": "workspace:*",
+    "@nexo/server-kit": "workspace:*",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.20",
     "pg": "8.23.1",

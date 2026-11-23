@@ -1,6 +1,6 @@
 import { ErrorCode } from '@nexo/contracts';
+import { ApplicationError } from '@nexo/server-kit';
 import { Hono } from 'hono';
-import { ApplicationError } from '../../../application/errors/application-error.ts';
 
 export function healthRoutes(checkReadiness: () => Promise<boolean>): Hono {
   const routes = new Hono();

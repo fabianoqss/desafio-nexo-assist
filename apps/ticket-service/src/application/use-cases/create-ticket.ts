@@ -1,7 +1,7 @@
 import type { CreateTicketRequest } from '@nexo/contracts';
 import { TicketEventKind, TicketStatus, UserRole, validateTicketDraft } from '@nexo/domain';
+import { ForbiddenError, ValidationError } from '@nexo/server-kit';
 import type { Actor } from '../access/actor.ts';
-import { ForbiddenError, ValidationError } from '../errors/application-error.ts';
 import {
   withIdempotency,
   type IdempotencyContext,

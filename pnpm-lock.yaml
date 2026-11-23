@@ -217,6 +217,12 @@ importers:
       '@nexo/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@nexo/seed-data':
+        specifier: workspace:*
+        version: link:../../packages/seed-data
+      '@nexo/server-kit':
+        specifier: workspace:*
+        version: link:../../packages/server-kit
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
@@ -321,6 +327,31 @@ importers:
       date-fns:
         specifier: 4.4.0
         version: 4.4.0
+
+  packages/seed-data:
+    dependencies:
+      '@nexo/domain':
+        specifier: workspace:*
+        version: link:../domain
+
+  packages/server-kit:
+    dependencies:
+      '@nexo/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      hono:
+        specifier: 4.13.20
+        version: 4.13.20
+      pino:
+        specifier: 10.4.0
+        version: 10.4.0
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: 26.6.6
+        version: 26.6.6
 
 packages:
 

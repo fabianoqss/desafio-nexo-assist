@@ -1,5 +1,5 @@
 import { UserRole, type Ticket } from '@nexo/domain';
-import { ForbiddenError, NotFoundError } from '../errors/application-error.ts';
+import { ForbiddenError, NotFoundError } from '@nexo/server-kit';
 import type { Actor } from './actor.ts';
 
 export function resolveRequesterScope(
