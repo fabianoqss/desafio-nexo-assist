@@ -3,14 +3,19 @@ import { createLogger, describeError } from '@nexo/server-kit';
 import { systemClock } from './adapters/clock/system-clock.ts';
 import { createApp } from './adapters/http/app.ts';
 import { noopMetrics } from './adapters/metrics/noop-metrics.ts';
+import { createDatabase } from './adapters/persistence/database.ts';
 import { createInMemoryRateLimiter } from './adapters/rate-limit/in-memory-rate-limiter.ts';
 import { loadEnv } from './config/env.ts';
 
 const env = loadEnv(process.env);
 const logger = createLogger(env.LOG_LEVEL);
+const { pool, checkReadiness } = createDatabase(env.DATABASE_URL);
+pool.on('error', (error) => {
+  logger.error(describeError(error), 'Falha em uma conexão ociosa com o PostgreSQL');
+});
 const app = createApp({
   logger,
-  checkReadiness: () => Promise.resolve(true),
+  checkReadiness,
   env,
   clock: systemClock,
   metrics: noopMetrics,
@@ -41,6 +46,10 @@ function shutdown() {
       logger.error(describeError(error), 'Falha ao fechar o servidor');
       process.exitCode = 1;
     }
+    void pool.end().catch((error: unknown) => {
+      logger.error(describeError(error), 'Falha ao fechar o pool do PostgreSQL');
+      process.exitCode = 1;
+    });
   });
 }
 
