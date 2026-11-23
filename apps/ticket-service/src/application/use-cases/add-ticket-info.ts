@@ -1,6 +1,6 @@
 import { ErrorCode, type AddTicketInfoRequest } from '@nexo/contracts';
 import { TicketEventKind, TicketStatus } from '@nexo/domain';
-import { assertCanRead } from '../access/access-policy.ts';
+import { assertCanRead, lockScopeFor } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
 import { ConflictError } from '../errors/application-error.ts';
 import {
@@ -18,7 +18,7 @@ export function addTicketInfo(
   context: IdempotencyContext,
 ): Promise<WriteResult> {
   return withIdempotency(deps, actor, `add-ticket-info:${id}`, context, async ({ tickets }) => {
-    const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id));
+    const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id, lockScopeFor(actor)));
     if (ticket.status === TicketStatus.RESOLVED) {
       throw new ConflictError(
         ErrorCode.TICKET_RESOLVED,

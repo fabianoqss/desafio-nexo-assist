@@ -192,6 +192,28 @@ describe('persistência de chamados com Drizzle', () => {
     expect(await idempotency.find(record.actorId, 'another-key')).toBeUndefined();
   });
 
+  it('ignora um chamado de outro solicitante mesmo quando a linha está bloqueada', async () => {
+    const entry = ticket('INC-149');
+    const otherRequesterId = '515570c9-6f88-4023-9383-b8a39accf87a';
+    await repository.insert(entry);
+
+    await unitOfWork.run(async ({ tickets }) => {
+      await expect(tickets.findByIdForUpdate(entry.id, entry.requesterId)).resolves.toStrictEqual(
+        entry,
+      );
+
+      await expect(
+        db.transaction(async (transaction) => {
+          await transaction.execute(sql`set local lock_timeout = '1s'`);
+          return createDrizzleTicketRepository(transaction).findByIdForUpdate(
+            entry.id,
+            otherRequesterId,
+          );
+        }),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   it('bloqueia a segunda leitura até o commit e devolve o status atualizado', async () => {
     const entry = ticket('INC-150');
     await repository.insert(entry);

@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { boundedText } from '../../common/bounded-text.ts';
 
 export const ReopenTicketRequestSchema = z.object({
-  message: z.string().trim().min(1).max(4000),
+  message: boundedText(4000),
 });
 
 export type ReopenTicketRequest = z.infer<typeof ReopenTicketRequestSchema>;

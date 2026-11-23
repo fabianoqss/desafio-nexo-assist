@@ -42,6 +42,12 @@ describe('CreateTicketRequestSchema', () => {
   ])('recusa campos inválidos no rascunho %#', (fields) => {
     expect(CreateTicketRequestSchema.safeParse({ ...draft, ...fields }).success).toBe(false);
   });
+
+  it.each(['title', 'description', 'item'])('recusa U+0000 no campo %s', (field) => {
+    expect(
+      CreateTicketRequestSchema.safeParse({ ...draft, [field]: 'VPN\u0000cliente' }).success,
+    ).toBe(false);
+  });
 });
 
 describe.each([
@@ -56,6 +62,10 @@ describe.each([
 
   it.each(['   ', 'a'.repeat(4001)])('recusa mensagens fora do limite %#', (message) => {
     expect(schema.safeParse({ message }).success).toBe(false);
+  });
+
+  it('recusa U+0000 na mensagem', () => {
+    expect(schema.safeParse({ message: 'A VPN\u0000voltou a desconectar.' }).success).toBe(false);
   });
 });
 

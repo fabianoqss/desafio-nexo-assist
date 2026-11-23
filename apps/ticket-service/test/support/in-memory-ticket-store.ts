@@ -39,8 +39,9 @@ export class InMemoryTicketStore implements TicketRepository, IdempotencyReposit
     return Promise.resolve(structuredClone(this.#state.tickets.get(id)));
   }
 
-  findByIdForUpdate(id: string): Promise<Ticket | undefined> {
-    return this.findById(id);
+  async findByIdForUpdate(id: string, requesterId?: string): Promise<Ticket | undefined> {
+    const ticket = await this.findById(id);
+    return requesterId === undefined || ticket?.requesterId === requesterId ? ticket : undefined;
   }
 
   list({ requesterId, status, limit }: TicketListFilter): Promise<Ticket[]> {

@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { boundedText } from '../../common/bounded-text.ts';
 
 export const AddTicketInfoRequestSchema = z.object({
-  message: z.string().trim().min(1).max(4000),
+  message: boundedText(4000),
 });
 
 export type AddTicketInfoRequest = z.infer<typeof AddTicketInfoRequestSchema>;

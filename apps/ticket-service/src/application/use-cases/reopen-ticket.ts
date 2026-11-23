@@ -1,6 +1,6 @@
 import { ErrorCode, type ReopenTicketRequest } from '@nexo/contracts';
 import { TicketEventKind, TicketStatus, UserRole, canReopen } from '@nexo/domain';
-import { assertCanRead } from '../access/access-policy.ts';
+import { assertCanRead, lockScopeFor } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
 import { ConflictError, ForbiddenError } from '../errors/application-error.ts';
 import {
@@ -22,7 +22,7 @@ export async function reopenTicket(
   }
 
   return withIdempotency(deps, actor, `reopen-ticket:${id}`, context, async ({ tickets }) => {
-    const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id));
+    const ticket = assertCanRead(actor, await tickets.findByIdForUpdate(id, lockScopeFor(actor)));
 
     const { resolvedAt, ...ticketWithoutResolution } = ticket;
     const resolution = {

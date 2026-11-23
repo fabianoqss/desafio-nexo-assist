@@ -3,9 +3,13 @@
 FROM node:26-slim AS build
 WORKDIR /repo
 RUN npm install --global pnpm@12.21.0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/ticket-service/package.json apps/ticket-service/
+COPY packages/contracts/package.json packages/contracts/
+COPY packages/domain/package.json packages/domain/
+RUN pnpm install --frozen-lockfile --filter @nexo/ticket-service...
 COPY . .
-RUN pnpm install --frozen-lockfile --filter @nexo/ticket-service... \
- && pnpm --filter @nexo/ticket-service build
+RUN pnpm --filter @nexo/ticket-service build
 
 FROM node:26-slim AS runtime
 ENV NODE_ENV=production

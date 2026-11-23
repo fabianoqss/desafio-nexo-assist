@@ -15,6 +15,10 @@ export function resolveRequesterScope(
   return actor.id;
 }
 
+export function lockScopeFor(actor: Actor): string | undefined {
+  return actor.role === UserRole.EMPLOYEE ? actor.id : undefined;
+}
+
 export function assertCanRead(actor: Actor, ticket: Ticket | undefined): Ticket {
   if (
     ticket === undefined ||

@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { systemClock } from './adapters/clock/system-clock.ts';
 import { createApp } from './adapters/http/app.ts';
 import { createLogger } from './adapters/logging/logger.ts';
+import { describeError } from './adapters/logging/safe-error.ts';
 import { createDatabase } from './adapters/persistence/database.ts';
 import { createDrizzleIdempotencyRepository } from './adapters/persistence/drizzle-idempotency-repository.ts';
 import { createDrizzleTicketRepository } from './adapters/persistence/drizzle-ticket-repository.ts';
@@ -17,7 +18,7 @@ if (failureInjection.rate > 0 || failureInjection.extraLatencyMs > 0) {
 
 const { db, pool, checkReadiness } = createDatabase(env.DATABASE_URL);
 pool.on('error', (error) => {
-  logger.error({ err: error }, 'Falha em uma conexão ociosa com o PostgreSQL');
+  logger.error(describeError(error), 'Falha em uma conexão ociosa com o PostgreSQL');
 });
 const app = createApp({
   logger,
@@ -47,11 +48,11 @@ function shutdown() {
   closing = true;
   server.close((error) => {
     if (error) {
-      logger.error({ err: error }, 'Falha ao fechar o servidor');
+      logger.error(describeError(error), 'Falha ao fechar o servidor');
       process.exitCode = 1;
     }
     void pool.end().catch((error: unknown) => {
-      logger.error({ err: error }, 'Falha ao fechar o pool do PostgreSQL');
+      logger.error(describeError(error), 'Falha ao fechar o pool do PostgreSQL');
       process.exitCode = 1;
     });
   });

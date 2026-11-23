@@ -11,6 +11,15 @@ describe('ActorHeadersSchema', () => {
     expect(ActorHeadersSchema.parse(headers)).toEqual(headers);
   });
 
+  it('normaliza o UUID do ator para minúsculas', () => {
+    expect(
+      ActorHeadersSchema.parse({
+        ...headers,
+        'x-actor-id': '26409eE7-73De-4218-9b0E-2B71ba1e12dD',
+      }),
+    ).toEqual(headers);
+  });
+
   it('recusa um identificador que não é UUID', () => {
     expect(ActorHeadersSchema.safeParse({ ...headers, 'x-actor-id': '123' }).success).toBe(false);
   });

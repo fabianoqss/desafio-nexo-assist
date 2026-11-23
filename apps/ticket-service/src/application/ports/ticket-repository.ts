@@ -16,7 +16,7 @@ export interface NewTicketEvent {
 
 export interface TicketRepository {
   findById(id: string): Promise<Ticket | undefined>;
-  findByIdForUpdate(id: string): Promise<Ticket | undefined>;
+  findByIdForUpdate(id: string, requesterId?: string): Promise<Ticket | undefined>;
   list(filter: TicketListFilter): Promise<Ticket[]>;
   nextId(type: TicketType): Promise<string>;
   insert(ticket: Ticket): Promise<void>;

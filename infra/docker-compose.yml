@@ -5,6 +5,7 @@ services:
     image: postgres:18-alpine
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      TICKETS_DB_OWNER_PASSWORD: ${TICKETS_DB_OWNER_PASSWORD:?}
       TICKETS_DB_PASSWORD: ${TICKETS_DB_PASSWORD:?}
       API_DB_PASSWORD: ${API_DB_PASSWORD:?}
     volumes:
@@ -13,7 +14,7 @@ services:
     ports:
       - '127.0.0.1:5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -25,7 +26,7 @@ services:
     image: nexo-assist/ticket-service:local
     command: ['node', 'dist/migrate.js']
     environment:
-      DATABASE_URL: postgres://nexo_tickets_app:${TICKETS_DB_PASSWORD:?}@postgres:5432/nexo_tickets
+      DATABASE_URL: postgres://nexo_tickets_owner:${TICKETS_DB_OWNER_PASSWORD:?}@postgres:5432/nexo_tickets
     depends_on:
       postgres:
         condition: service_healthy

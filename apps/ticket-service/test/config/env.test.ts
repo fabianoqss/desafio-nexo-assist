@@ -58,6 +58,14 @@ describe('loadEnv', () => {
     expect(load).not.toThrow(invalidUrl);
   });
 
+  it.each([' ', ','])('rejeita um token de 40 caracteres com %j', (separator) => {
+    const token = 't'.repeat(20) + separator + 't'.repeat(19);
+
+    expect(() => loadEnv({ ...requiredEnv, TICKET_SERVICE_API_TOKEN: token })).toThrow(
+      /^Variáveis de ambiente inválidas: TICKET_SERVICE_API_TOKEN$/,
+    );
+  });
+
   it('aceita valores fracionários dentro do intervalo de latência', () => {
     expect(loadEnv({ ...requiredEnv, EXTRA_LATENCY_MS: '0.5' }).EXTRA_LATENCY_MS).toBe(0.5);
   });
