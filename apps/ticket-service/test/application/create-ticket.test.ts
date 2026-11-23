@@ -9,9 +9,9 @@ import {
   Urgency,
   UserRole,
 } from '@nexo/domain';
+import { ForbiddenError, ValidationError } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
 import type { Actor } from '../../src/application/access/actor.ts';
-import { ForbiddenError, ValidationError } from '../../src/application/errors/application-error.ts';
 import { addTicketInfo } from '../../src/application/use-cases/add-ticket-info.ts';
 import { createTicket } from '../../src/application/use-cases/create-ticket.ts';
 import { FixedClock } from '../support/fixed-clock.ts';

@@ -1,8 +1,7 @@
+import { createLogger, describeError } from '@nexo/server-kit';
 import { serve } from '@hono/node-server';
 import { systemClock } from './adapters/clock/system-clock.ts';
 import { createApp } from './adapters/http/app.ts';
-import { createLogger } from './adapters/logging/logger.ts';
-import { describeError } from './adapters/logging/safe-error.ts';
 import { createDatabase } from './adapters/persistence/database.ts';
 import { createDrizzleIdempotencyRepository } from './adapters/persistence/drizzle-idempotency-repository.ts';
 import { createDrizzleTicketRepository } from './adapters/persistence/drizzle-ticket-repository.ts';

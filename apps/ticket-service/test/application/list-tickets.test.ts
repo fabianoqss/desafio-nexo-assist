@@ -1,7 +1,7 @@
 import { TicketStatus, UserRole } from '@nexo/domain';
+import { ForbiddenError } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
 import type { Actor } from '../../src/application/access/actor.ts';
-import { ForbiddenError } from '../../src/application/errors/application-error.ts';
 import { listTickets } from '../../src/application/use-cases/list-tickets.ts';
 import { FixedClock } from '../support/fixed-clock.ts';
 import { InMemoryTicketStore } from '../support/in-memory-ticket-store.ts';

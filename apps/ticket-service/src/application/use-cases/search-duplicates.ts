@@ -1,8 +1,8 @@
 import type { DuplicateSearchQuery } from '@nexo/contracts';
 import { findDuplicateCandidates, type DuplicateAction } from '@nexo/domain';
+import { ValidationError } from '@nexo/server-kit';
 import { resolveRequesterScope } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
-import { ValidationError } from '../errors/application-error.ts';
 import type { Clock } from '../ports/clock.ts';
 import type { TicketRepository } from '../ports/ticket-repository.ts';
 import { toTicketView, type TicketView } from '../views/ticket-view.ts';

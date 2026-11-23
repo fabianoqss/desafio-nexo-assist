@@ -10,12 +10,9 @@ import {
   TicketIdSchema,
   type DuplicateCandidateResponse,
 } from '@nexo/contracts';
+import { ApplicationError, ValidationError } from '@nexo/server-kit';
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import {
-  ApplicationError,
-  ValidationError,
-} from '../../../application/errors/application-error.ts';
 import type {
   WriteDependencies,
   WriteResult,

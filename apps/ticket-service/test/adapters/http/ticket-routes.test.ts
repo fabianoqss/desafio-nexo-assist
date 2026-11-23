@@ -10,10 +10,10 @@ import {
   TicketResponseSchema,
 } from '@nexo/contracts';
 import { UserRole } from '@nexo/domain';
+import { createLogger } from '@nexo/server-kit';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../../src/adapters/http/app.ts';
-import { createLogger } from '../../../src/adapters/logging/logger.ts';
 import { createDatabase } from '../../../src/adapters/persistence/database.ts';
 import { createDrizzleIdempotencyRepository } from '../../../src/adapters/persistence/drizzle-idempotency-repository.ts';
 import { createDrizzleTicketRepository } from '../../../src/adapters/persistence/drizzle-ticket-repository.ts';

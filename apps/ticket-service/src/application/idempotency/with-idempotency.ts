@@ -1,7 +1,7 @@
 import { ErrorCode } from '@nexo/contracts';
+import { ConflictError } from '@nexo/server-kit';
 import { assertCanRead } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
-import { ConflictError } from '../errors/application-error.ts';
 import type { Clock } from '../ports/clock.ts';
 import type { IdempotencyRecord, IdempotencyRepository } from '../ports/idempotency-repository.ts';
 import type { TicketRepository } from '../ports/ticket-repository.ts';

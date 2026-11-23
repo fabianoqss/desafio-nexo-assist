@@ -1,8 +1,8 @@
 import { ErrorCode, type ChangeTicketStatusRequest } from '@nexo/contracts';
 import { TicketStatus, UserRole, canChangeStatus, statusChangeEventKind } from '@nexo/domain';
+import { ConflictError, ForbiddenError } from '@nexo/server-kit';
 import { assertCanRead } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
-import { ConflictError, ForbiddenError } from '../errors/application-error.ts';
 import {
   withIdempotency,
   type IdempotencyContext,

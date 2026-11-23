@@ -1,8 +1,8 @@
 import { ErrorCode, type AddTicketInfoRequest } from '@nexo/contracts';
 import { TicketEventKind, TicketStatus } from '@nexo/domain';
+import { ConflictError } from '@nexo/server-kit';
 import { assertCanRead, lockScopeFor } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
-import { ConflictError } from '../errors/application-error.ts';
 import {
   withIdempotency,
   type IdempotencyContext,

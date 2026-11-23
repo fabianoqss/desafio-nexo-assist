@@ -7,6 +7,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/ticket-service/package.json apps/ticket-service/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/domain/package.json packages/domain/
+COPY packages/seed-data/package.json packages/seed-data/
+COPY packages/server-kit/package.json packages/server-kit/
 RUN pnpm install --frozen-lockfile --filter @nexo/ticket-service...
 COPY . .
 RUN pnpm --filter @nexo/ticket-service build

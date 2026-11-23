@@ -1,6 +1,6 @@
+import { readDatabaseUrl } from '@nexo/server-kit';
 import { createDatabase } from '../adapters/persistence/database.ts';
 import { createDrizzleUnitOfWork } from '../adapters/persistence/drizzle-unit-of-work.ts';
-import { readDatabaseUrl } from '../config/database-url.ts';
 import { seedTickets } from './seed.ts';
 
 const { db, pool } = createDatabase(readDatabaseUrl(process.env));

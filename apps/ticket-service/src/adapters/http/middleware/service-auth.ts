@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { ErrorCode, SERVICE_AUTH_HEADER } from '@nexo/contracts';
+import { ApplicationError } from '@nexo/server-kit';
 import { createMiddleware } from 'hono/factory';
-import { ApplicationError } from '../../../application/errors/application-error.ts';
 
 export function serviceAuth(apiToken: string) {
   const expected = Buffer.from(apiToken);

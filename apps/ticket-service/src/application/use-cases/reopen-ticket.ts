@@ -1,8 +1,8 @@
 import { ErrorCode, type ReopenTicketRequest } from '@nexo/contracts';
 import { TicketEventKind, TicketStatus, UserRole, canReopen } from '@nexo/domain';
+import { ConflictError, ForbiddenError } from '@nexo/server-kit';
 import { assertCanRead, lockScopeFor } from '../access/access-policy.ts';
 import type { Actor } from '../access/actor.ts';
-import { ConflictError, ForbiddenError } from '../errors/application-error.ts';
 import {
   withIdempotency,
   type IdempotencyContext,

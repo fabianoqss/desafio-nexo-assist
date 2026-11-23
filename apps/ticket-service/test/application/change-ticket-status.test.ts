@@ -1,8 +1,8 @@
 import { ErrorCode } from '@nexo/contracts';
 import { TicketEventKind, TicketStatus, UserRole } from '@nexo/domain';
+import { ForbiddenError, NotFoundError } from '@nexo/server-kit';
 import { describe, expect, it } from 'vitest';
 import type { Actor } from '../../src/application/access/actor.ts';
-import { ForbiddenError, NotFoundError } from '../../src/application/errors/application-error.ts';
 import { changeTicketStatus } from '../../src/application/use-cases/change-ticket-status.ts';
 import { FixedClock } from '../support/fixed-clock.ts';
 import { InMemoryTicketStore } from '../support/in-memory-ticket-store.ts';
