@@ -1,16 +1,28 @@
 import { serve } from '@hono/node-server';
+import { systemClock } from './adapters/clock/system-clock.ts';
 import { createApp } from './adapters/http/app.ts';
 import { createLogger } from './adapters/logging/logger.ts';
 import { createDatabase } from './adapters/persistence/database.ts';
+import { createDrizzleIdempotencyRepository } from './adapters/persistence/drizzle-idempotency-repository.ts';
+import { createDrizzleTicketRepository } from './adapters/persistence/drizzle-ticket-repository.ts';
+import { createDrizzleUnitOfWork } from './adapters/persistence/drizzle-unit-of-work.ts';
 import { loadEnv } from './config/env.ts';
 
 const env = loadEnv(process.env);
 const logger = createLogger(env.LOG_LEVEL);
-const { pool, checkReadiness } = createDatabase(env.DATABASE_URL);
+const { db, pool, checkReadiness } = createDatabase(env.DATABASE_URL);
 pool.on('error', (error) => {
   logger.error({ err: error }, 'Falha em uma conexão ociosa com o PostgreSQL');
 });
-const app = createApp({ logger, checkReadiness });
+const app = createApp({
+  logger,
+  checkReadiness,
+  apiToken: env.TICKET_SERVICE_API_TOKEN,
+  tickets: createDrizzleTicketRepository(db),
+  unitOfWork: createDrizzleUnitOfWork(db),
+  idempotency: createDrizzleIdempotencyRepository(db),
+  clock: systemClock,
+});
 
 const server = serve(
   { fetch: app.fetch, hostname: env.HOST, port: env.PORT },

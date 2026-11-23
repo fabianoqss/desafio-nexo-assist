@@ -4,13 +4,24 @@ import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../../src/adapters/http/app.ts';
 import { createLogger } from '../../../src/adapters/logging/logger.ts';
 import { createDatabase } from '../../../src/adapters/persistence/database.ts';
+import { FixedClock } from '../../support/fixed-clock.ts';
+import { InMemoryTicketStore } from '../../support/in-memory-ticket-store.ts';
 
 const requestId = '550e8400-e29b-41d4-a716-446655440000';
 const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ready = () => Promise.resolve(true);
 
-function appWithReadiness(checkReadiness: () => Promise<boolean>) {
-  return createApp({ logger: createLogger('silent'), checkReadiness });
+function appWithReadiness(checkReadiness: () => Promise<boolean>, logger = createLogger('silent')) {
+  const store = new InMemoryTicketStore();
+  return createApp({
+    logger,
+    checkReadiness,
+    apiToken: 'token-de-servico-privado-para-testes',
+    tickets: store,
+    unitOfWork: store,
+    idempotency: store,
+    clock: new FixedClock(),
+  });
 }
 
 describe('rotas de saúde', () => {
@@ -72,7 +83,7 @@ describe('rotas de saúde', () => {
   it('registra o caminho declarado da rota e os metadados da resposta', async () => {
     const lines: string[] = [];
     const logger = pino({ base: null, timestamp: false }, { write: (line) => lines.push(line) });
-    const app = createApp({ logger, checkReadiness: ready });
+    const app = appWithReadiness(ready, logger);
     app.post('/probe/:id', (context) => context.text('ok', 201));
 
     await app.request('/probe/person%40example.com?email=other%40example.com', {

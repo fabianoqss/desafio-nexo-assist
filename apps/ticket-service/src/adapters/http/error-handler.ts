@@ -23,6 +23,19 @@ function isApplicationError(error: Error): error is ApplicationError {
   return error instanceof ApplicationError;
 }
 
+function databaseErrorCode(error: Error): string | undefined {
+  const cause: unknown = error.cause;
+  if (typeof cause === 'object' && cause !== null && 'code' in cause) {
+    return typeof cause.code === 'string' ? cause.code : undefined;
+  }
+  return undefined;
+}
+
+function describeUnexpectedError(error: Error): Record<string, string> {
+  const code = databaseErrorCode(error);
+  return { errorName: error.name, ...(code === undefined ? {} : { databaseErrorCode: code }) };
+}
+
 export function errorHandler(logger: Logger): ErrorHandler {
   return (error, context) => {
     let body: ErrorResponse;
@@ -32,10 +45,13 @@ export function errorHandler(logger: Logger): ErrorHandler {
     } else if (error instanceof ZodError) {
       body = { error: { code: ErrorCode.VALIDATION_FAILED, message: 'Dados inválidos' } };
     } else {
-      logger.error({
-        err: error,
-        requestId: context.res.headers.get(REQUEST_ID_HEADER),
-      });
+      logger.error(
+        {
+          ...describeUnexpectedError(error),
+          requestId: context.res.headers.get(REQUEST_ID_HEADER),
+        },
+        'Erro inesperado ao processar a requisição',
+      );
       body = { error: { code: ErrorCode.INTERNAL_ERROR, message: 'Erro interno do servidor' } };
     }
 
